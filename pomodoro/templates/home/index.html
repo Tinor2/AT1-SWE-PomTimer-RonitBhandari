@@ -55,8 +55,53 @@
                                        onchange="this.form.submit()">
                             </form>
                             <span class="task-content">{{ task['content'] }}</span>
-                            <form method="post" action="{{ url_for('home.delete_task', id=task['id']) }}" style="display: inline;">
-                                <button type="submit" class="delete-btn" onclick="return confirm('Delete this task?')">Delete</button>
+
+                            {# Tags display (existing) #}
+                            {% set tags_str = (task['tags'] or '') %}
+                            {% set tags_list = tags_str.split(',') if tags_str else [] %}
+                            {% set color_to_class = {
+                                '#ff5252':'red',
+                                '#ff9800':'orange',
+                                '#ffeb3b':'yellow',
+                                '#4caf50':'green',
+                                '#00bcd4':'cyan',
+                                '#3f51b5':'indigo',
+                                '#9c27b0':'purple',
+                                '#795548':'brown'
+                            } %}
+                            <div class="task-tags-display">
+                                {% for color in tags_list %}
+                                    {% if color %}
+                                    {% set cc = color_to_class.get(color) %}
+                                    <span class="tag-dot {{ 'tag-' ~ cc if cc }}" title="{{ color }}"></span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+                            {# Tag button and popup #}
+                            <form method="post" action="{{ url_for('home.update_tags', id=task['id']) }}" class="tag-form" data-task-id="{{ task['id'] }}">
+                                <input type="hidden" name="tags" value="{{ tags_str }}">
+                                <button type="button" class="tag-btn" aria-label="Edit tags">
+                                    <img src="{{ url_for('static', filename='assets/tag.png') }}" alt="Tags" class="tag-icon">
+                                </button>
+                                <div class="tag-menu" role="menu" aria-hidden="true">
+                                    <div class="tag-menu-grid">
+                                        {% set preset = ['#ff5252','#ff9800','#ffeb3b','#4caf50','#00bcd4','#3f51b5','#9c27b0','#795548'] %}
+                                        {% for c in preset %}
+                                        {% set cc = color_to_class.get(c) %}
+                                        <button type="button" class="color-choice {{ 'tag-' ~ cc if cc }}" data-color="{{ c }}" title="{{ c }}"></button>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="tag-menu-actions">
+                                        <button type="button" class="btn btn-secondary tag-clear">Clear</button>
+                                        <button type="submit" class="btn btn-primary tag-apply">Apply</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <form method="post" action="{{ url_for('home.delete_task', id=task['id']) }}" style="display: inline;" class="delete-form">
+                                <button type="submit" class="delete-btn" onclick="return confirm('Delete this task?')" aria-label="Delete task">
+                                    <img src="{{ url_for('static', filename='assets/delete.png') }}" alt="Delete" class="delete-icon">
+                                </button>
                             </form>
                         </li>
                     {% else %}

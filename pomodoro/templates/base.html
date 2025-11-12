@@ -9,8 +9,9 @@
 <body>
     <nav class="navbar">
         <div class="nav-content">
-            <a href="{{ url_for('home.index') }}" class="nav-link">Home</a>
-            <a href="{{ url_for('lists.index') }}" class="nav-link">Lists</a>
+            <span class="nav-brand">Logo</span>
+            <a href="{{ url_for('home.index') }}" class="nav-link {% if request.endpoint == 'home.index' %}active{% endif %}">Home</a>
+            <a href="{{ url_for('lists.index') }}" class="nav-link {% if request.endpoint == 'lists.index' %}active{% endif %}">Lists</a>
         </div>
     </nav>
     

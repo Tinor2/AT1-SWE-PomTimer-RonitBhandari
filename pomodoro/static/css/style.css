@@ -27,6 +27,13 @@ body {
     margin-left: auto;
 }
 
+.nav-brand {
+    margin-right: auto;
+    color: #ffffff;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
 .nav-link {
     text-decoration: none;
     color: #ffffff;
@@ -36,6 +43,21 @@ body {
 
 .nav-link:hover {
     color: #ffadad;
+}
+
+.nav-link.active {
+    font-weight: 900;
+    position: relative;
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #ffffff;
 }
 
 /* Container */
@@ -225,12 +247,132 @@ body {
     list-style: none;
 }
 
+/* Tags UI */
+.task-tags-display {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-right: 0.25rem;
+}
+
+.tag-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2.3px solid rgba(0,0,0,0.05);
+}
+.tag-dot:hover{
+    filter: brightness(1.2);
+}
+
+/* Smoothen hover transitions for tag dots and color choices */
+.tag-dot,
+.color-choice {
+    transition: filter 0.15s ease;
+}
+
+.color-choice:hover {
+    filter: brightness(0.9);
+}
+
+/* Tag color classes (used by tag dots and color choice buttons) */
+.tag-red { background-color: #ff5252; }
+.tag-orange { background-color: #ff9800; }
+.tag-yellow { background-color: #ffeb3b; }
+.tag-green { background-color: #4caf50; }
+.tag-cyan { background-color: #00bcd4; }
+.tag-indigo { background-color: #3f51b5; }
+.tag-purple { background-color: #9c27b0; }
+.tag-brown { background-color: #795548; }
+
+.tag-form {
+    position: relative;
+    display: inline-block;
+    margin-right: 0.25rem;
+}
+
+.tag-btn {
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.tag-btn:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.tag-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+}
+
+.tag-btn:hover .tag-icon {
+    opacity: 1;
+}
+
+.tag-menu {
+    position: absolute;
+    top: 110%;
+    right: 0;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    padding: 0.75rem;
+    z-index: 20;
+    display: none;
+    min-width: 200px;
+}
+
+.tag-menu.open {
+    display: block;
+}
+
+.tag-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.color-choice {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+.color-choice.selected {
+    box-shadow: 0 0 0 2px #fff inset;
+    border-color: #333;
+}
+
+.tag-menu-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+/* Align actions at end of task row */
+.task-item {
+    gap: 0.5rem;
+}
+
 .task-item {
     display: flex;
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1.5px solid #eee;
     transition: background-color 0.2s;
 }
 
@@ -255,18 +397,30 @@ body {
 }
 
 .delete-btn {
-    padding: 0.5rem 1rem;
-    background-color: #f44336;
-    color: white;
+    padding: 0.5rem;
+    background: none;
     border: none;
-    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
     transition: background-color 0.2s;
 }
 
 .delete-btn:hover {
-    background-color: #d32f2f;
+    background-color: rgba(244, 67, 54, 0.1);
+}
+
+.delete-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.delete-btn:hover .delete-icon {
+    opacity: 1;
 }
 
 .no-list {
@@ -365,12 +519,15 @@ body {
 }
 
 .btn-primary {
-    background-color: #ff6b6b;
+    background-color: #ff5252;
     color: white;
+    font-weight: 600;
+    max-width:fit-content;
 }
 
 .btn-primary:hover {
-    background-color: #ff5252;
+    background-color: #ff3737;
+    /* font-weight: 700; */
 }
 
 .btn-secondary {
@@ -383,23 +540,32 @@ body {
 }
 
 .btn-select {
-    background-color: #ec6f48;
+    background-color: #4caf50;
     color: white;
 }
 
 .btn-select:hover:not(:disabled) {
-    background-color: #ec5323;
+    background-color: #539d56;
 }
 
 .btn-select:disabled {
-    background-color: #ea4949;
+    background-color: #65c06a9c;
     cursor: not-allowed;
 }
 
-.btn-edit, .btn-delete {
+.btn-edit {
     background-color: #e0e0e0;
     color: #999;
     cursor: not-allowed;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #d32f2f;
 }
 
 /* Create Form */

@@ -22,6 +22,7 @@ CREATE TABLE tasks (
     list_id INTEGER NOT NULL,
     content TEXT NOT NULL,
     is_done BOOLEAN DEFAULT 0,
+    tags TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (list_id) REFERENCES lists (id) ON DELETE CASCADE
 );

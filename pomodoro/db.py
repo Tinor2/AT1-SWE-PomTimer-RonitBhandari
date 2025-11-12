@@ -15,6 +15,7 @@ def get_db():
             detect_types=sqlite3.PARSE_DECLTYPES
         )
         g.db.row_factory = sqlite3.Row
+        _ensure_schema(g.db)
 
     return g.db
 
@@ -46,3 +47,13 @@ def init_app(app):
     """Register database functions with the Flask app."""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+
+def _ensure_schema(db: sqlite3.Connection):
+    try:
+        cols = db.execute("PRAGMA table_info(tasks)").fetchall()
+        names = {c[1] for c in cols}
+        if 'tags' not in names:
+            db.execute("ALTER TABLE tasks ADD COLUMN tags TEXT DEFAULT ''")
+            db.commit()
+    except sqlite3.Error:
+        pass

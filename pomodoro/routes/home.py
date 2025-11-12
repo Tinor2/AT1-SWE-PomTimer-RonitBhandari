@@ -76,3 +76,22 @@ def delete_task(id):
     db.commit()
     
     return redirect(url_for('home.index'))
+
+@bp.route('/task/<int:id>/tags', methods=['POST'])
+def update_tags(id):
+    """Update tags for a task. Accepts comma-separated colors in 'tags' field."""
+    tags = request.form.get('tags', '').strip()
+    # Normalize: remove spaces, deduplicate and keep order
+    colors = [c.strip() for c in tags.split(',') if c.strip()]
+    seen = set()
+    normalized = []
+    for c in colors:
+        if c not in seen:
+            normalized.append(c)
+            seen.add(c)
+    tags_value = ','.join(normalized)
+
+    db = get_db()
+    db.execute('UPDATE tasks SET tags = ? WHERE id = ?', (tags_value, id))
+    db.commit()
+    return redirect(url_for('home.index'))

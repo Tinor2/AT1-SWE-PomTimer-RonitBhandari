@@ -24,7 +24,6 @@ def select_list(id):
     db.execute('UPDATE lists SET is_active = 1 WHERE id = ?', (id,))
     db.commit()
     
-    # Redirect back to the lists page
     return redirect(url_for('lists.index'))
 
 @bp.route('/create', methods=('GET', 'POST'))
@@ -52,3 +51,27 @@ def create():
         flash(error)
     
     return render_template('lists/create.html')
+
+@bp.route('/<int:id>/delete', methods=('POST',))
+def delete_list(id):
+    db = get_db()
+    
+    # Check if this is the active list
+    list_to_delete = db.execute('SELECT is_active FROM lists WHERE id = ?', (id,)).fetchone()
+    
+    if list_to_delete:
+        was_active = list_to_delete['is_active']
+        
+        # Delete the list (CASCADE will delete associated tasks)
+        db.execute('DELETE FROM lists WHERE id = ?', (id,))
+        
+        # If we deleted the active list, make another list active
+        if was_active:
+            new_active = db.execute('SELECT id FROM lists LIMIT 1').fetchone()
+            if new_active:
+                db.execute('UPDATE lists SET is_active = 1 WHERE id = ?', (new_active['id'],))
+        
+        db.commit()
+        flash('List deleted successfully.')
+    
+    return redirect(url_for('lists.index'))

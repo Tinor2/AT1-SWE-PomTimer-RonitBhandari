@@ -27,8 +27,12 @@
                             {% if list['is_active'] %}Active{% else %}Select{% endif %}
                         </button>
                     </form>
-                    <button class="btn btn-edit" disabled>Edit</button>
-                    <button class="btn btn-delete" disabled>Delete</button>
+                    <form method="post" action="{{ url_for('lists.delete_list', id=list['id']) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-delete" onclick="return confirm('Are you sure you want to delete this list? All tasks will be deleted too.')">Delete</button>
+                    </form>
+                    <button class="btn btn-edit" disabled>
+                        <img src="{{ url_for('static', filename='assets/setting.png') }}" alt="Edit settings" style="height: 16px; width: 16px; vertical-align: middle;"/>
+                    </button>
                 </div>
             </div>
         {% else %}
