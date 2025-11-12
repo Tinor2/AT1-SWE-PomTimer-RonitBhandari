@@ -1,6 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, g
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 
 bp = Blueprint('lists', __name__, url_prefix='/lists')
+
+def get_db():
+    """Helper function to get database connection."""
+    from .. import db
+    return db.get_db()
 
 @bp.route('/')
 def index():
@@ -19,7 +24,8 @@ def select_list(id):
     db.execute('UPDATE lists SET is_active = 1 WHERE id = ?', (id,))
     db.commit()
     
-    return redirect(url_for('home.index'))
+    # Redirect back to the lists page
+    return redirect(url_for('lists.index'))
 
 @bp.route('/create', methods=('GET', 'POST'))
 def create():
@@ -46,7 +52,3 @@ def create():
         flash(error)
     
     return render_template('lists/create.html')
-
-def get_db():
-    from .. import db
-    return db.get_db()

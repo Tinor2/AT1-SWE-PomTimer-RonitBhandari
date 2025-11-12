@@ -5,12 +5,13 @@ from flask import current_app, g
 from flask.cli import with_appcontext
 
 def get_db():
+    """Get database connection."""
     if 'db' not in g:
         # Ensure the instance folder exists
-        os.makedirs(os.path.join(current_app.instance_path), exist_ok=True)
+        os.makedirs(current_app.instance_path, exist_ok=True)
         
         g.db = sqlite3.connect(
-            os.path.join(current_app.instance_path, 'pomodoro.sqlite'),
+            current_app.config['DATABASE'],
             detect_types=sqlite3.PARSE_DECLTYPES
         )
         g.db.row_factory = sqlite3.Row
@@ -18,12 +19,14 @@ def get_db():
     return g.db
 
 def close_db(e=None):
+    """Close database connection."""
     db = g.pop('db', None)
 
     if db is not None:
         db.close()
 
 def init_db():
+    """Initialize the database with schema."""
     db = get_db()
     
     # Get the path to the schema file in the project root
@@ -40,5 +43,6 @@ def init_db_command():
     click.echo('Initialized the database.')
 
 def init_app(app):
+    """Register database functions with the Flask app."""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)

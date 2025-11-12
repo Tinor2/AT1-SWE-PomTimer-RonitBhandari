@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Pomodoro + To-Do{% endblock %}
+
+{% block content %}
+<div class="home-layout">
+    <!-- Left Panel: Pomodoro Timer -->
+    <div class="panel pomodoro-panel">
+        <h2>Pomodoro Timer</h2>
+        {% if active_list %}
+            <div class="pomodoro-placeholder">
+                <p class="list-name">Active List: {{ active_list['name'] }}</p>
+                <div class="timer-settings">
+                    <p>Session: {{ active_list['pomo_session'] }} min</p>
+                    <p>Short Break: {{ active_list['pomo_short_break'] }} min</p>
+                    <p>Long Break: {{ active_list['pomo_long_break'] }} min</p>
+                </div>
+                <div class="timer-display">
+                    <p class="timer-placeholder">Timer will go here</p>
+                </div>
+            </div>
+        {% else %}
+            <p class="no-list">No active list selected. <a href="{{ url_for('lists.index') }}">Select a list</a></p>
+        {% endif %}
+    </div>
+    
+    <!-- Right Panel: To-Do List -->
+    <div class="panel tasks-panel">
+        <h2>To-Do List</h2>
+        {% if active_list %}
+            <div class="tasks-container">
+                <div class="add-task-container">
+                    <form method="post" action="{{ url_for('home.add_task') }}" class="add-task-form">
+                        <input 
+                            type="text" 
+                            name="content" 
+                            placeholder="Add a new task..." 
+                            class="task-input"
+                            required
+                            aria-label="Task content"
+                        >
+                        <button type="submit" class="add-task-btn">
+                            <span class="btn-icon">+</span>
+                            <span class="btn-text">Add Task</span>
+                        </button>
+                    </form>
+                </div>
+                
+                <ul class="task-list">
+                    {% for task in tasks %}
+                        <li class="task-item {% if task['is_done'] %}completed{% endif %}">
+                            <form method="post" action="{{ url_for('home.toggle_task', id=task['id']) }}" style="display: inline;">
+                                <input type="checkbox" 
+                                       {% if task['is_done'] %}checked{% endif %}
+                                       onchange="this.form.submit()">
+                            </form>
+                            <span class="task-content">{{ task['content'] }}</span>
+                            <form method="post" action="{{ url_for('home.delete_task', id=task['id']) }}" style="display: inline;">
+                                <button type="submit" class="delete-btn" onclick="return confirm('Delete this task?')">Delete</button>
+                            </form>
+                        </li>
+                    {% else %}
+                        <li class="empty-state">No tasks yet. Add one above!</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% else %}
+            <p class="no-list">No active list selected. <a href="{{ url_for('lists.index') }}">Select a list</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}

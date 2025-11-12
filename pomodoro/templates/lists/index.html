@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}My Lists{% endblock %}
+
+{% block content %}
+<div class="lists-page">
+    <div class="page-header">
+        <h1>My Lists</h1>
+        <a href="{{ url_for('lists.create') }}" class="btn btn-primary">Create New List</a>
+    </div>
+    
+    <div class="lists-grid">
+        {% for list in lists %}
+            <div class="list-card {% if list['is_active'] %}active{% endif %}">
+                <h3>{{ list['name'] }}</h3>
+                <p class="list-description">{{ list['description'] or 'No description' }}</p>
+                
+                <div class="list-settings">
+                    <span>Session: {{ list['pomo_session'] }}m</span>
+                    <span>Short: {{ list['pomo_short_break'] }}m</span>
+                    <span>Long: {{ list['pomo_long_break'] }}m</span>
+                </div>
+                
+                <div class="list-actions">
+                    <form method="post" action="{{ url_for('lists.select_list', id=list['id']) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-select" {% if list['is_active'] %}disabled{% endif %}>
+                            {% if list['is_active'] %}Active{% else %}Select{% endif %}
+                        </button>
+                    </form>
+                    <button class="btn btn-edit" disabled>Edit</button>
+                    <button class="btn btn-delete" disabled>Delete</button>
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No lists yet. <a href="{{ url_for('lists.create') }}">Create your first list</a></p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lists.js') }}"></script>
+{% endblock %}
