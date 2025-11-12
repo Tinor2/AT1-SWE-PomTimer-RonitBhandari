@@ -3,9 +3,9 @@
 This document outlines the development roadmap for the Pomodoro + To-Do Web Application.
 
 ## 1. Project Setup
-- [x] Initialize Flask application structure
-- [x] Set up SQLite database with schema
-- [ ] Create basic configuration files (requirements.txt, .gitignore)
+- [X] Initialize Flask application structure
+- [X] Set up SQLite database with schema
+- [X] Create basic configuration files (requirements.txt, .gitignore)
 
 ## 2. Core Backend
 - [ ] Implement database models and CRUD operations
