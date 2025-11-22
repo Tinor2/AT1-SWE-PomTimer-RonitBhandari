@@ -53,6 +53,9 @@ body {
 
 .logout-btn:hover {
     color: #ffadad;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 4px 8px;
 }
 
 .nav-brand {
@@ -60,6 +63,12 @@ body {
     color: #ffffff;
     font-weight: 800;
     letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.nav-brand:hover {
+    color: #ffadad;
 }
 
 .nav-link {

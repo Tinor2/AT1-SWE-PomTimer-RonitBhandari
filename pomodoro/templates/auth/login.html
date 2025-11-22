@@ -37,8 +37,7 @@
             <div class="form-group checkbox-group">
                 <label class="checkbox-label">
                     <input type="checkbox" name="remember" id="remember">
-                    <span class="checkmark"></span>
-                    Remember me
+                    <span class="checkbox-text">Remember me</span>
                 </label>
             </div>
             
@@ -46,7 +45,7 @@
         </form>
         
         <div class="auth-footer">
-            <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Sign up</a></p>
+            <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Sign up here</a></p>
         </div>
     </div>
 </div>
@@ -121,10 +120,17 @@
     align-items: center;
     cursor: pointer;
     font-size: 0.9rem;
+    gap: 0.5rem;
 }
 
 .checkbox-label input[type="checkbox"] {
-    margin-right: 0.5rem;
+    margin: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.checkbox-text {
+    color: #333;
 }
 
 .btn {
