@@ -3,33 +3,52 @@
 -- Drop tables if they exist
 DROP TABLE IF EXISTS tasks;
 DROP TABLE IF EXISTS lists;
+DROP TABLE IF EXISTS users;
+
+-- Create users table
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP
+);
 
 -- Create lists table
 CREATE TABLE lists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
     description TEXT,
     is_active BOOLEAN DEFAULT 0,
     pomo_session INTEGER DEFAULT 25,
     pomo_short_break INTEGER DEFAULT 5,
     pomo_long_break INTEGER DEFAULT 15,
-    pomo_current_time INTEGER DEFAULT 0
+    pomo_current_time INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    UNIQUE(user_id, name)
 );
 
 -- Create tasks table
 CREATE TABLE tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     list_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
     content TEXT NOT NULL,
     is_done BOOLEAN DEFAULT 0,
     tags TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (list_id) REFERENCES lists (id) ON DELETE CASCADE
+    FOREIGN KEY (list_id) REFERENCES lists (id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 -- Create an index on list_id for faster queries
 CREATE INDEX idx_tasks_list_id ON tasks(list_id);
 
--- Insert a default list
-INSERT INTO lists (name, description, is_active, pomo_session, pomo_short_break, pomo_long_break)
-VALUES ('My First List', 'Default list to get you started', 1, 25, 5, 15);
+-- Create an index on user_id for faster queries
+CREATE INDEX idx_tasks_user_id ON tasks(user_id);
+CREATE INDEX idx_lists_user_id ON lists(user_id);
+
+-- Note: Default list insertion removed since lists now require a user_id

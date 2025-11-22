@@ -1,5 +1,6 @@
 from flask import Flask
 import os
+from flask_login import LoginManager
 
 def create_app(test_config=None):
     # Create and configure the app
@@ -28,10 +29,23 @@ def create_app(test_config=None):
     from . import db
     db.init_app(app)
 
+    # Initialize Flask-Login
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Please log in to access this page.'
+    login_manager.login_message_category = 'info'
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        from .models.user import User
+        return User.get_by_id(int(user_id))
+
     # Register blueprints
-    from .routes import home, lists
+    from .routes import home, lists, auth
     app.register_blueprint(home.bp)
     app.register_blueprint(lists.bp)
+    app.register_blueprint(auth.bp)
     app.add_url_rule('/', endpoint='index')
 
     return app

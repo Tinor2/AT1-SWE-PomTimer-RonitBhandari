@@ -36,6 +36,46 @@ def init_db():
     with open(schema_path, 'r') as f:
         db.executescript(f.read())
 
+@click.command('migrate-user-data')
+@with_appcontext
+def migrate_user_data_command():
+    """Migrate existing lists and tasks to user accounts or clear if no users exist."""
+    database = get_db()
+    
+    # Check if there are any users
+    users = database.execute("SELECT id FROM users LIMIT 1").fetchall()
+    
+    if not users:
+        # No users exist, clear all data
+        click.echo('No users found. Clearing all lists and tasks...')
+        database.execute("DELETE FROM tasks")
+        database.execute("DELETE FROM lists")
+        database.commit()
+        click.echo('Cleared all lists and tasks.')
+    else:
+        # Get the first user ID
+        first_user_id = users[0]['id']
+        
+        # Update existing lists to belong to the first user
+        lists_updated = database.execute(
+            "UPDATE lists SET user_id = ? WHERE user_id IS NULL",
+            (first_user_id,)
+        ).rowcount
+        
+        # Update existing tasks to belong to the first user
+        tasks_updated = database.execute(
+            "UPDATE tasks SET user_id = ? WHERE user_id IS NULL",
+            (first_user_id,)
+        ).rowcount
+        
+        database.commit()
+        click.echo(f'Migrated {lists_updated} lists and {tasks_updated} tasks to user {first_user_id}.')
+    
+    # Update schema to add user_id columns if they don't exist
+    _ensure_schema(database)
+    database.commit()
+    click.echo('Database migration completed.')
+
 @click.command('init-db')
 @with_appcontext
 def init_db_command():
@@ -47,13 +87,43 @@ def init_app(app):
     """Register database functions with the Flask app."""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+    app.cli.add_command(migrate_user_data_command)
 
 def _ensure_schema(db: sqlite3.Connection):
+    try:
+        # Check if users table exists
+        db.execute("SELECT 1 FROM users LIMIT 1")
+    except sqlite3.Error:
+        # Create users table if it doesn't exist
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_login TIMESTAMP
+            )
+        """)
+        db.commit()
+    
     try:
         cols = db.execute("PRAGMA table_info(tasks)").fetchall()
         names = {c[1] for c in cols}
         if 'tags' not in names:
             db.execute("ALTER TABLE tasks ADD COLUMN tags TEXT DEFAULT ''")
+        if 'user_id' not in names:
+            db.execute("ALTER TABLE tasks ADD COLUMN user_id INTEGER")
+            db.commit()
+    except sqlite3.Error:
+        pass
+    
+    try:
+        cols = db.execute("PRAGMA table_info(lists)").fetchall()
+        names = {c[1] for c in cols}
+        if 'user_id' not in names:
+            db.execute("ALTER TABLE lists ADD COLUMN user_id INTEGER")
+            db.execute("ALTER TABLE lists ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
             db.commit()
     except sqlite3.Error:
         pass
