@@ -434,10 +434,53 @@ body {
     padding: 1rem;
     border-bottom: 1.5px solid #eee;
     transition: background-color 0.2s;
+    cursor: grab;
 }
 
 .task-item:hover {
     background-color: #fafafa;
+}
+
+.task-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.drag-handle {
+    cursor: grab;
+    color: #ccc;
+    padding: 0 8px;
+    user-select: none;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+.drag-handle:hover {
+    color: #999;
+}
+
+.task-item.drag-over {
+    border-top: 3px solid #ff5252;
+}
+
+.task-placeholder {
+    border: 2px dashed #ff5252;
+    background-color: #fff5f5;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border-radius: 4px;
+    list-style: none;
+}
+
+.placeholder-text {
+    color: #ff5252;
+    text-align: center;
+    font-style: italic;
+    font-size: 0.9rem;
 }
 
 .task-item input[type="checkbox"] {

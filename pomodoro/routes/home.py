@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 
 bp = Blueprint('home', __name__)
@@ -23,7 +23,7 @@ def index():
     tasks = []
     if active_list:
         tasks = db.execute(
-            'SELECT * FROM tasks WHERE list_id = ? AND user_id = ? ORDER BY created_at',
+            'SELECT * FROM tasks WHERE list_id = ? AND user_id = ? ORDER BY position',
             (active_list['id'], current_user.id)
         ).fetchall()
     
@@ -50,10 +50,16 @@ def add_task():
         flash('No active list selected.')
         return redirect(url_for('home.index'))
     
+    # Get the highest position in the list
+    max_position = db.execute(
+        'SELECT COALESCE(MAX(position), -1) FROM tasks WHERE list_id = ? AND user_id = ?',
+        (active_list['id'], current_user.id)
+    ).fetchone()[0]
+    
     # Insert the new task for the current user
     db.execute(
-        'INSERT INTO tasks (list_id, user_id, content) VALUES (?, ?, ?)',
-        (active_list['id'], current_user.id, content)
+        'INSERT INTO tasks (list_id, user_id, content, position) VALUES (?, ?, ?, ?)',
+        (active_list['id'], current_user.id, content, max_position + 1)
     )
     db.commit()
     
@@ -115,3 +121,55 @@ def update_tags(id):
         flash('Task not found or access denied.', 'error')
     
     return redirect(url_for('home.index'))
+
+@bp.route('/task/reorder', methods=['POST'])
+@login_required
+def reorder_tasks():
+    """Update task positions based on drag-and-drop."""
+    if not request.is_json:
+        return jsonify({'error': 'Invalid request format'}), 400
+    
+    data = request.get_json()
+    task_order = data.get('task_order', [])
+    list_id = data.get('list_id')
+    
+    if not task_order or not list_id:
+        print(f"Missing data: task_order={task_order}, list_id={list_id}")
+        return jsonify({'error': 'Missing required data'}), 400
+    
+    # Convert task IDs to integers if they're strings
+    try:
+        task_order = [int(task_id) for task_id in task_order]
+        list_id = int(list_id)
+    except (ValueError, TypeError) as e:
+        print(f"Invalid data types: {e}")
+        return jsonify({'error': 'Invalid data format'}), 400
+    
+    db = get_db()
+    
+    # Verify the list belongs to the current user
+    list_check = db.execute(
+        'SELECT id FROM lists WHERE id = ? AND user_id = ?',
+        (list_id, current_user.id)
+    ).fetchone()
+    
+    if not list_check:
+        print(f"Unauthorized access: list_id={list_id}, user_id={current_user.id}")
+        return jsonify({'error': 'Unauthorized access'}), 403
+    
+    try:
+        # Update positions for all tasks in the order
+        for index, task_id in enumerate(task_order):
+            result = db.execute(
+                'UPDATE tasks SET position = ? WHERE id = ? AND user_id = ? AND list_id = ?',
+                (index, task_id, current_user.id, list_id)
+            )
+            if result.rowcount == 0:
+                print(f"No rows updated for task_id={task_id}, index={index}")
+        
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        print(f"Database error in reorder_tasks: {e}")
+        return jsonify({'error': f'Database error: {str(e)}'}), 500

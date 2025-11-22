@@ -2,6 +2,10 @@
 
 {% block title %}Home - Pomodoro + To-Do{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/task-reorder.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="home-layout">
     <!-- Left Panel: Pomodoro Timer -->
@@ -46,9 +50,12 @@
                     </form>
                 </div>
                 
-                <ul class="task-list">
+                <ul class="task-list" data-list-id="{{ active_list.id }}">
                     {% for task in tasks %}
-                        <li class="task-item {% if task['is_done'] %}completed{% endif %}">
+                        <li class="task-item {% if task['is_done'] %}completed{% endif %}" 
+                            data-task-id="{{ task.id }}" 
+                            draggable="true">
+                            <div class="drag-handle">⋮⋮</div>
                             <form method="post" action="{{ url_for('home.toggle_task', id=task['id']) }}" style="display: inline;">
                                 <input type="checkbox" 
                                        {% if task['is_done'] %}checked{% endif %}
@@ -118,4 +125,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+<script src="{{ url_for('static', filename='js/task-reorder.js') }}"></script>
 {% endblock %}

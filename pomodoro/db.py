@@ -115,6 +115,21 @@ def _ensure_schema(db: sqlite3.Connection):
         if 'user_id' not in names:
             db.execute("ALTER TABLE tasks ADD COLUMN user_id INTEGER")
             db.commit()
+        if 'position' not in names:
+            db.execute("ALTER TABLE tasks ADD COLUMN position INTEGER DEFAULT 0")
+            # Update existing tasks to have sequential positions
+            db.execute("""
+                UPDATE tasks SET position = (
+                    SELECT row_number - 1
+                    FROM (
+                        SELECT id, row_number() OVER (PARTITION BY list_id ORDER BY created_at) as row_number
+                        FROM tasks 
+                        WHERE user_id IS NOT NULL
+                    ) as numbered
+                    WHERE numbered.id = tasks.id
+                )
+            """)
+            db.commit()
     except sqlite3.Error:
         pass
     
