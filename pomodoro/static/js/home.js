@@ -7,14 +7,26 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.tag-menu').forEach(menu => {
             menu.classList.remove('open');
             menu.setAttribute('aria-hidden', 'true');
+            // Move menu back to its original form
+            const originalForm = menu.dataset.originalForm;
+            if (originalForm) {
+                const form = document.querySelector(`.tag-form[data-form-id="${originalForm}"]`);
+                if (form) {
+                    form.appendChild(menu);
+                }
+            }
         });
     };
 
     // Open/close tag menu
-    document.querySelectorAll('.tag-form').forEach(form => {
+    document.querySelectorAll('.tag-form').forEach((form, index) => {
         const btn = form.querySelector('.tag-btn');
         const menu = form.querySelector('.tag-menu');
         const hiddenInput = form.querySelector('input[name="tags"]');
+
+        // Add unique ID to form for tracking
+        form.setAttribute('data-form-id', `form-${index}`);
+        menu.setAttribute('data-original-form', `form-${index}`);
 
         const presetButtons = Array.from(form.querySelectorAll('.color-choice'));
 
@@ -29,6 +41,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const isOpen = menu.classList.contains('open');
             closeAllTagMenus();
             if (!isOpen) {
+                // Move menu to body and position it
+                document.body.appendChild(menu);
+                
+                // Position menu to the left of the button
+                const rect = btn.getBoundingClientRect();
+                menu.style.position = 'fixed';
+                menu.style.top = `${rect.bottom + 6}px`;
+                menu.style.right = 'auto';
+                menu.style.left = `${rect.left - 180}px`; // Position 180px to the left (menu width + padding)
+                
+                // If menu would go off-screen left, adjust position
+                if (rect.left - 180 < 10) {
+                    menu.style.left = '10px';
+                    menu.style.top = `${rect.bottom + 6}px`;
+                }
+                
                 menu.classList.add('open');
                 menu.setAttribute('aria-hidden', 'false');
             }
