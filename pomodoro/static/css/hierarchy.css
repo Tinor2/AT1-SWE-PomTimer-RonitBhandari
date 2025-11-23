@@ -1,0 +1,186 @@
+/* Hierarchical Task Styling */
+
+/* Configuration Variables */
+:root {
+    --hierarchy-indent-size: 55px;  /* Base indentation unit for each level */
+}
+
+/* Simple level-based indentation - entire task item */
+.task-item.level-1 {
+    margin-left: calc(var(--hierarchy-indent-size) * 1) !important;
+    opacity: 0.95;
+}
+
+.task-item.level-2 {
+    margin-left: calc(var(--hierarchy-indent-size) * 2) !important;
+    opacity: 0.9;
+}
+
+.task-item.level-3 {
+    margin-left: calc(var(--hierarchy-indent-size) * 3) !important;
+    opacity: 0.85;
+}
+
+.task-item.level-4 {
+    margin-left: calc(var(--hierarchy-indent-size) * 4) !important;
+    opacity: 0.8;
+}
+
+.task-item.level-5 {
+    margin-left: calc(var(--hierarchy-indent-size) * 5) !important;
+    opacity: 0.75;
+}
+
+/* Collapsed subtasks */
+.task-item.collapsed + .task-children {
+    display: none;
+}
+
+.task-children {
+    transition: all 0.3s ease;
+}
+
+/* Progress indicator for parent tasks */
+.task-item[data-level="0"] .task-content::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    height: 2px;
+    background: var(--success-color);
+    border-radius: 1px;
+    transition: width 0.3s ease;
+}
+
+.task-item[data-level="0"] .task-content {
+    position: relative;
+}
+
+/* Visual hierarchy for different levels */
+.task-item[data-level="0"] {
+    font-weight: 500;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--primary-light);
+}
+
+.task-item[data-level="1"] {
+    background: var(--bg-primary);
+    border-left: 3px solid rgba(168, 85, 247, 0.4); /* Lighter purple */
+}
+
+.task-item[data-level="2"] {
+    background: var(--bg-primary);
+    border-left: 3px solid rgba(168, 85, 247, 0.3); /* Even lighter purple */
+}
+
+.task-item[data-level="3"] {
+    background: var(--bg-primary);
+    border-left: 3px solid rgba(168, 85, 247, 0.2); /* Very light purple */
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .task-item[data-level="1"] {
+        padding-left: 15px;
+    }
+    
+    .task-item[data-level="2"] {
+        padding-left: 30px;
+    }
+    
+    .task-item[data-level="3"] {
+        padding-left: 45px;
+    }
+    
+    .task-item[data-level="4"] {
+        padding-left: 60px;
+    }
+    
+    .add-subtask-btn {
+        padding: 1px 4px;
+        font-size: 11px;
+    }
+    
+    .collapse-btn {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Animation for hierarchy changes */
+.task-item.hierarchy-changing {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.task-item.hierarchy-changing {
+    opacity: 0.7;
+    transform: scale(0.98);
+}
+
+/* Subtask input form */
+.subtask-input-form {
+    padding: 8px 0;
+    border-top: 1px solid var(--border-light);
+    margin-top: 8px;
+}
+
+.subtask-input-form input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    background: var(--bg-secondary);
+}
+
+.subtask-input-form input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.subtask-input-form .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.subtask-input-form .btn {
+    padding: 4px 12px;
+    font-size: 12px;
+    border-radius: var(--radius-sm);
+}
+
+/* Empty state for subtasks */
+.no-subtasks {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* Loading state for hierarchy operations */
+.task-item.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.task-item.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

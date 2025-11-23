@@ -26,6 +26,10 @@ class TaskReordering {
     }
     
     createPlaceholder() {
+        // Remove any previous leftover placeholder
+        const old = document.querySelector('.task-placeholder');
+        if (old) old.remove();
+
         this.placeholder = document.createElement('li');
         this.placeholder.className = 'task-placeholder';
         this.placeholder.innerHTML = '<div class="placeholder-text">Drop task here</div>';
@@ -134,12 +138,9 @@ class TaskReordering {
         
         this.draggedElement.classList.remove('dragging');
         
-        // Remove placeholder if it still exists
-        const placeholder = document.querySelector('.task-placeholder');
-        if (placeholder) {
-            placeholder.remove();
-        }
-        
+        // Remove ALL placeholders, not just the first
+        document.querySelectorAll('.task-placeholder').forEach(p => p.remove());
+
         this.draggedElement = null;
         this.isReordering = false;
     }
@@ -196,7 +197,7 @@ class TaskReordering {
                 setTimeout(() => location.reload(), 2000);
             } else {
                 taskElements.forEach(el => el.style.opacity = '1');
-                this.showSuccess('Tasks reordered successfully');
+                // Success message removed - showSuccess method was deleted
             }
         })
         .catch(error => {
@@ -243,19 +244,6 @@ class TaskReordering {
         
         document.body.appendChild(flashDiv);
         setTimeout(() => flashDiv.remove(), 3000);
-    }
-    
-    showSuccess(message) {
-        // const flashDiv = document.createElement('div');
-        // flashDiv.className = 'flash flash-success';
-        // flashDiv.textContent = message;
-        // flashDiv.style.position = 'fixed';
-        // flashDiv.style.top = '20px';
-        // flashDiv.style.right = '20px';
-        // flashDiv.style.zIndex = '9999';
-        
-        // document.body.appendChild(flashDiv);
-        // setTimeout(() => flashDiv.remove(), 2000);
     }
 }
 
