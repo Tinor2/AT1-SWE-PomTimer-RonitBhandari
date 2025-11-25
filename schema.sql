@@ -4,6 +4,7 @@
 DROP TABLE IF EXISTS tasks;
 DROP TABLE IF EXISTS lists;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS user_tags;
 
 -- Create users table
 CREATE TABLE users (
@@ -49,12 +50,26 @@ CREATE TABLE tasks (
     FOREIGN KEY (parent_id) REFERENCES tasks (id) ON DELETE CASCADE
 );
 
+-- Create user_tags table for customizable tag management
+CREATE TABLE user_tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    color_hex TEXT NOT NULL,
+    color_name TEXT,
+    position INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    UNIQUE(user_id, color_hex)
+);
+
 -- Create an index on list_id for faster queries
 CREATE INDEX idx_tasks_list_id ON tasks(list_id);
 
 -- Create an index on user_id for faster queries
 CREATE INDEX idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX idx_lists_user_id ON lists(user_id);
+CREATE INDEX idx_user_tags_user_id ON user_tags(user_id);
 
 -- Create indexes for hierarchical queries
 CREATE INDEX idx_tasks_parent_id ON tasks(parent_id);

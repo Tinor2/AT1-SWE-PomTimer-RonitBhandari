@@ -41,6 +41,11 @@ class DeleteModal {
     showModal(taskId, taskContent) {
         this.currentTaskId = taskId;
         this.taskContent.textContent = taskContent;
+        
+        // Reset title for task deletion
+        const modalTitle = document.getElementById('modalTitle');
+        modalTitle.textContent = 'Confirm Delete';
+        
         this.modal.classList.add('show');
         this.modal.setAttribute('aria-hidden', 'false');
         

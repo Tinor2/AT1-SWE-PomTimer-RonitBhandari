@@ -40,7 +40,7 @@ def select_list(id):
     db.execute('UPDATE lists SET is_active = 1 WHERE id = ? AND user_id = ?', (id, current_user.id))
     db.commit()
     
-    return redirect(url_for('lists.index'))
+    return redirect(url_for('home.index'))
 
 @bp.route('/create', methods=('GET', 'POST'))
 @login_required

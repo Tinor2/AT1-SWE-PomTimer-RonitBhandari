@@ -5,7 +5,9 @@
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/task-reorder.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/hierarchy.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hierarchy-feedback.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tag-settings.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -53,71 +55,7 @@
                 </div>
                 
                 <ul class="task-list" data-list-id="{{ active_list.id }}">
-                    {% for task in tasks %}
-                        <li class="task-item {% if task.is_done %}completed{% endif %} {% if (task.level or 0) > 0 %}level-{{ task.level or 0 }}{% endif %}" 
-                            data-task-id="{{ task.id }}" 
-                            data-level="{{ task.level or 0 }}"
-                            data-parent-id="{{ task.parent_id or '' }}"
-                            draggable="true">
-                            
-                            <div class="drag-handle">⋮⋮</div>
-                            <form method="post" action="{{ url_for('home.toggle_task', id=task.id) }}" style="display: inline;">
-                                <input type="checkbox" 
-                                       {% if task.is_done %}checked{% endif %}
-                                       onchange="this.form.submit()">
-                            </form>
-                            <span class="task-content">{{ task.content }}</span>
-
-                            {# Tags display (existing) #}
-                            {% set tags_str = (task.tags or '') %}
-                            {% set tags_list = tags_str.split(',') if tags_str else [] %}
-                            {% set color_to_class = {
-                                '#ff5252':'red',
-                                '#ff9800':'orange',
-                                '#ffeb3b':'yellow',
-                                '#4caf50':'green',
-                                '#00bcd4':'cyan',
-                                '#3f51b5':'indigo',
-                                '#9c27b0':'purple',
-                                '#795548':'brown'
-                            } %}
-                            <div class="task-tags-display">
-                                {% for color in tags_list %}
-                                    {% if color %}
-                                    {% set cc = color_to_class.get(color) %}
-                                    <span class="tag-dot {{ 'tag-' ~ cc if cc }}" title="{{ color }}"></span>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
-
-                            {# Tag button and popup #}
-                            <form method="post" action="{{ url_for('home.update_tags', id=task.id) }}" class="tag-form" data-task-id="{{ task.id }}">
-                                <input type="hidden" name="tags" value="{{ tags_str }}">
-                                <button type="button" class="tag-btn" aria-label="Edit tags">
-                                    <img src="{{ url_for('static', filename='assets/tag.png') }}" alt="Tags" class="tag-icon">
-                                </button>
-                                <div class="tag-menu" role="menu" aria-hidden="true">
-                                    <div class="tag-menu-grid">
-                                        {% set preset = ['#ff5252','#ff9800','#ffeb3b','#4caf50','#00bcd4','#3f51b5','#9c27b0','#795548'] %}
-                                        {% for c in preset %}
-                                        {% set cc = color_to_class.get(c) %}
-                                        <button type="button" class="color-choice {{ 'tag-' ~ cc if cc }}" data-color="{{ c }}" title="{{ c }}"></button>
-                                        {% endfor %}
-                                    </div>
-                                    <div class="tag-menu-actions">
-                                        <button type="button" class="btn btn-secondary tag-clear">Clear</button>
-                                        <button type="submit" class="btn btn-primary tag-apply">Apply</button>
-                                    </div>
-                                </div>
-                            </form>
-                            
-                            <button type="button" class="delete-btn" data-task-id="{{ task.id }}" data-task-content="{{ task.content }}" aria-label="Delete task">
-                                <img src="{{ url_for('static', filename='assets/delete.png') }}" alt="Delete" class="delete-icon">
-                            </button>
-                        </li>
-                    {% else %}
-                        <li class="empty-state">No tasks yet. Add one above!</li>
-                    {% endfor %}
+                    {{ task_hierarchy_html|safe }}
                 </ul>
             </div>
         {% else %}
@@ -144,11 +82,42 @@
         </div>
     </div>
 </div>
+
+<!-- Tag Settings Modal -->
+<div id="tagSettingsModal" class="modal" role="dialog" aria-labelledby="tagSettingsTitle" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="tagSettingsTitle">Manage Tags</h3>
+            <button type="button" class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="tag-list" id="tagList">
+                <!-- Existing tags will be populated here -->
+            </div>
+            <div class="add-tag-section">
+                <h4>Add New Tag</h4>
+                <div class="new-tag-form">
+                    <input type="color" id="newTagColor" class="color-input" title="Choose color">
+                    <input type="text" id="newTagName" class="name-input" placeholder="Tag name (optional)">
+                    <button type="button" id="addCustomTag" class="btn btn-primary">Add Tag</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary modal-cancel">Close</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>
-<script src="{{ url_for('static', filename='js/task-reorder.js') }}"></script>
-<script src="{{ url_for('static', filename='js/hierarchical-tasks.js') }}"></script>
+<!-- OLD DRAG SYSTEMS (REPLACED BY UNIFIED CONTROLLER) -->
+<!-- <script src="{{ url_for('static', filename='js/task-reorder.js') }}"></script> -->
+<!-- <script src="{{ url_for('static', filename='js/hierarchical-tasks.js') }}"></script> -->
+
+<!-- NEW: Unified Drag Controller - Single Source of Truth -->
+<script src="{{ url_for('static', filename='js/unified-drag-controller.js') }}"></script>
 <script src="{{ url_for('static', filename='js/delete-modal.js') }}"></script>
 {% endblock %}

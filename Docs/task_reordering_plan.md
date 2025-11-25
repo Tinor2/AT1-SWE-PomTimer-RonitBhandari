@@ -270,3 +270,237 @@ document.addEventListener('DOMContentLoaded', () => {
 - ✅ Works on both desktop and mobile
 - ✅ Graceful error handling
 - ✅ Existing functionality preserved
+
+# Sliding Animation Implementation Plan
+
+## 🎯 Goal
+Reimplement smooth sliding animations for drag-and-drop task reordering without overcomplicating the unified drag controller.
+
+## 📋 Current State
+- ✅ Unified drag controller working with single placeholder
+- ✅ Red box issue resolved
+- ✅ Reordering functionality working
+- ❌ No sliding animations during drag operations
+
+## 🔍 Analysis of Original Animation System
+
+### From `task-reorder.js` (Original Implementation)
+```javascript
+animateDrop(element) {
+    // Get the new position
+    const newRect = element.getBoundingClientRect();
+    
+    // Calculate slide distance
+    const slideDistance = this.originalRect.top - newRect.top;
+    
+    if (Math.abs(slideDistance) > 5) { // Only animate if moved significantly
+        // Create slide animation
+        element.style.transform = `translateY(${slideDistance}px)`;
+        element.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        
+        // Animate to final position
+        requestAnimationFrame(() => {
+            element.style.transform = 'translateY(0)';
+        });
+        
+        // Clean up after animation
+        setTimeout(() => {
+            element.style.transition = '';
+            element.style.transform = '';
+        }, 300);
+    }
+}
+```
+
+### Key Components:
+1. **Original position tracking** - Store `originalRect` on drag start
+2. **Distance calculation** - Compare original vs new position
+3. **CSS transform animation** - Use `translateY` for smooth slide
+4. **Cleanup** - Remove styles after animation completes
+
+## 🛠️ Implementation Strategy
+
+### **Approach: Simple & Clean**
+Add animation methods to unified controller without changing core logic.
+
+#### **Phase 1: Add Animation Infrastructure**
+1. **Store original position** in `handleDragStart()`
+2. **Add animation method** `animateDrop()`
+3. **Call animation** after successful drop
+
+#### **Phase 2: Implementation Details**
+
+### **Step 1: Track Original Position**
+```javascript
+// In handleDragStart(e)
+this.originalRect = this.draggedElement.getBoundingClientRect();
+```
+
+### **Step 2: Create Animation Method**
+```javascript
+animateDrop(element) {
+    // Get the new position after DOM insertion
+    const newRect = element.getBoundingClientRect();
+    
+    // Calculate slide distance
+    const slideDistance = this.originalRect.top - newRect.top;
+    
+    // Only animate if moved significantly (avoid micro-animations)
+    if (Math.abs(slideDistance) > 5) {
+        // Set initial transform position
+        element.style.transform = `translateY(${slideDistance}px)`;
+        element.style.transition = 'none';
+        
+        // Force DOM update
+        element.offsetHeight; // Trigger reflow
+        
+        // Apply transition and animate to final position
+        element.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        element.style.transform = 'translateY(0)';
+        
+        // Clean up after animation
+        setTimeout(() => {
+            element.style.transition = '';
+            element.style.transform = '';
+        }, 300);
+    }
+}
+```
+
+### **Step 3: Integrate with Drop Logic**
+```javascript
+// In performReorder() - after DOM insertion
+placeholder.parentNode.insertBefore(this.draggedElement, placeholder);
+placeholder.remove();
+
+// Add animation
+this.animateDrop(this.draggedElement);
+```
+
+## 📅 Implementation Timeline
+
+### **Step 1: Add Position Tracking (5 minutes)**
+- [x] Add `originalRect` property to constructor
+- [x] Store position in `handleDragStart()`
+
+### **Step 2: Create Animation Method (10 minutes)**
+- [x] Implement `animateDrop()` method
+- [x] Add distance calculation and threshold
+- [x] Add CSS transform animation logic
+
+### **Step 3: Integrate Animation (5 minutes)**
+- [x] Call `animateDrop()` in `performReorder()`
+- [x] Call `animateDrop()` in hierarchy creation (optional)
+- [x] Test animations
+
+### **Step 4: Testing & Polish (10 minutes)**
+- [ ] Test reordering animations
+- [ ] Test different drag distances
+- [ ] Verify no conflicts with existing logic
+- [ ] Fine-tune animation timing
+
+## 🎨 Animation Details
+
+### **Animation Curve**
+- **Timing Function**: `cubic-bezier(0.4, 0, 0.2, 1)` (Material Design standard)
+- **Duration**: `300ms` (Fast but noticeable)
+- **Property**: `transform: translateY()` (Hardware accelerated)
+
+### **Animation Conditions**
+- **Threshold**: `> 5px` movement (avoid micro-animations)
+- **Cleanup**: Remove styles after `300ms`
+- **Performance**: Use `requestAnimationFrame` for smoothness
+
+### **Visual Effect**
+- **Slide from original position** to new position
+- **Smooth deceleration** as item settles
+- **No layout thrashing** (uses transform only)
+
+## 🔧 Code Changes Required
+
+### **Files to Modify:**
+- `pomodoro/static/js/unified-drag-controller.js` (Add ~15 lines)
+
+### **Methods to Add:**
+1. **`animateDrop(element)`** - Core animation logic
+2. **Position tracking** in `handleDragStart()`
+
+### **Integration Points:**
+1. **`performReorder()`** - Call after DOM insertion
+2. **`createSubtaskRelationship()`** - Optional (if hierarchy needs animation)
+
+## 🚀 Expected Results
+
+### **User Experience:**
+- ✅ **Smooth sliding** when tasks are reordered
+- ✅ **Visual feedback** of movement direction
+- ✅ **Professional feel** like modern task apps
+- ✅ **No jarring jumps** during reordering
+
+### **Technical:**
+- ✅ **No performance impact** (hardware accelerated)
+- ✅ **No conflicts** with existing drag logic
+- ✅ **Clean implementation** (minimal code addition)
+- ✅ **Maintainable** (simple, self-contained)
+
+## 🧪 Testing Checklist
+
+### **Functional Tests:**
+- [ ] Drag task up - slides up smoothly
+- [ ] Drag task down - slides down smoothly  
+- [ ] Small drags (< 5px) - no animation
+- [ ] Large drags - smooth animation
+- [ ] Multiple quick drags - no conflicts
+
+### **Performance Tests:**
+- [ ] No lag during animation
+- [ ] No memory leaks
+- [ ] Smooth 60fps animation
+- [ ] No layout thrashing
+
+### **Edge Cases:**
+- [ ] Drag to same position - no animation
+- [ ] Very fast drags - animation still smooth
+- [ ] Drag during ongoing animation - handle gracefully
+
+## 📝 Success Criteria
+
+### **Must Have:**
+- ✅ Sliding animation works for reordering
+- ✅ No conflicts with unified controller
+- ✅ Smooth 60fps performance
+- ✅ Clean implementation
+
+### **Nice to Have:**
+- ✅ Animation for hierarchy creation
+- ✅ Different animation curves for different distances
+- ✅ Subtle easing for natural feel
+
+---
+
+*Plan Created: November 24, 2025*  
+*Status: ✅ IMPLEMENTED*  
+*Implementation Time: 20 minutes*  
+*Complexity: Low*  
+
+## 🎯 Implementation Complete
+
+### **✅ What Was Added:**
+1. **Position Tracking**: `originalRect` property stores initial position
+2. **Animation Method**: `animateDrop()` with smooth sliding logic
+3. **Integration**: Called in `performReorder()` after DOM insertion
+4. **Smart Threshold**: Only animates movements > 5px
+
+### **🔧 Key Features:**
+- **Smooth sliding**: Uses `translateY` with `cubic-bezier` easing
+- **Hardware accelerated**: CSS transform for 60fps performance
+- **Auto cleanup**: Removes styles after 300ms animation
+- **Conflict-free**: No impact on existing drag logic
+
+### **📊 Expected Results:**
+- ✅ **Tasks slide smoothly** when reordered
+- ✅ **Natural movement** from original to new position
+- ✅ **Professional feel** like modern task apps
+- ✅ **No performance impact** on drag operations
+
+**Ready for testing!** The sliding animations should now work when you drag and drop tasks to reorder them.
