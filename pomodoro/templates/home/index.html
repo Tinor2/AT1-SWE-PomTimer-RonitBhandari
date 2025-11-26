@@ -23,8 +23,24 @@
                     <p>Short Break: {{ active_list['pomo_short_break'] }} min</p>
                     <p>Long Break: {{ active_list['pomo_long_break'] }} min</p>
                 </div>
-                <div class="timer-display">
-                    <p class="timer-placeholder">Timer will go here</p>
+                
+                <!-- NEW: Timer Interface -->
+                <div class="timer-container" id="timerContainer">
+                    <div class="timer-header">
+                        <div class="timer-phase" id="timerPhase">Focus Session</div>
+                        <button id="resetSetsBtn" class="btn btn-ghost btn-sm" title="Reset set counter">↺</button>
+                    </div>
+                    <div class="timer-paused-status" id="timerPausedStatus" style="display: none;">Paused</div>
+                    <div class="timer-display" id="timerDisplay">25:00</div>
+                    <div class="timer-progress">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="timer-controls">
+                        <button id="startPauseBtn" class="btn btn-primary">Start</button>
+                        <button id="resetBtn" class="btn btn-secondary">Reset</button>
+                        <button id="skipBtn" class="btn btn-secondary">Skip</button>
+                    </div>
+                    <div class="timer-sessions" id="sessionCounter">0/4 sessions</div>
                 </div>
             </div>
         {% else %}
@@ -83,6 +99,31 @@
     </div>
 </div>
 
+<!-- Reset Sets Confirmation Modal -->
+<div id="resetSetsModal" class="modal" role="dialog" aria-labelledby="resetSetsModalTitle" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="resetSetsModalTitle">Reset Sets</h3>
+            <button type="button" class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to reset your sets?</p>
+            <p>This will:</p>
+            <ul>
+                <li>Reset set counter to 1</li>
+                <li>Return to first focus session</li>
+                <li>Reset timer to 25:00</li>
+            </ul>
+            <p class="text-warning">Your current progress will be lost.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+            <button type="button" class="btn btn-warning modal-confirm">Reset Sets</button>
+        </div>
+    </div>
+</div>
+
 <!-- Tag Settings Modal -->
 <div id="tagSettingsModal" class="modal" role="dialog" aria-labelledby="tagSettingsTitle" aria-hidden="true">
     <div class="modal-backdrop"></div>
@@ -113,6 +154,7 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+<script src="{{ url_for('static', filename='js/timer.js') }}"></script>
 <!-- OLD DRAG SYSTEMS (REPLACED BY UNIFIED CONTROLLER) -->
 <!-- <script src="{{ url_for('static', filename='js/task-reorder.js') }}"></script> -->
 <!-- <script src="{{ url_for('static', filename='js/hierarchical-tasks.js') }}"></script> -->

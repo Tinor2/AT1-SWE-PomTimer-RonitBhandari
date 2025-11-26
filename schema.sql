@@ -27,6 +27,13 @@ CREATE TABLE lists (
     pomo_short_break INTEGER DEFAULT 5,
     pomo_long_break INTEGER DEFAULT 15,
     pomo_current_time INTEGER DEFAULT 0,
+    -- Timer state management
+    timer_state TEXT DEFAULT 'idle' CHECK(timer_state IN ('idle', 'session', 'short_break', 'long_break', 'paused')),
+    current_phase TEXT DEFAULT NULL CHECK(current_phase IN ('session', 'short_break', 'long_break')),
+    timer_remaining INTEGER DEFAULT 0,
+    sessions_completed INTEGER DEFAULT 0,
+    timer_started_at TIMESTAMP NULL,
+    timer_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     UNIQUE(user_id, name)

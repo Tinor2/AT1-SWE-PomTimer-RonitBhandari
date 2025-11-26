@@ -33,6 +33,20 @@ def select_list(id):
         flash('List not found or access denied.', 'error')
         return redirect(url_for('lists.index'))
     
+    # Get current active list to pause its timer if running
+    current_active = db.execute(
+        'SELECT id, timer_state, timer_remaining FROM lists WHERE is_active = 1 AND user_id = ?',
+        (current_user.id,)
+    ).fetchone()
+    
+    # Pause timer on current active list if it's running
+    if current_active and current_active['timer_state'] in ('session', 'short_break', 'long_break'):
+        from datetime import datetime, timezone
+        db.execute(
+            'UPDATE lists SET timer_state = ?, timer_started_at = ?, timer_last_updated = ? WHERE id = ? AND user_id = ?',
+            ('paused', None, datetime.now(timezone.utc).isoformat(), current_active['id'], current_user.id)
+        )
+    
     # Set all of user's lists to inactive
     db.execute('UPDATE lists SET is_active = 0 WHERE user_id = ?', (current_user.id,))
     

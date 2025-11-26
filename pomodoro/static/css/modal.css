@@ -165,6 +165,27 @@
     outline-offset: 2px;
 }
 
+/* Reset Sets Modal Styles */
+.modal-body ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.modal-body li {
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.text-warning {
+    color: var(--warning-color);
+    font-weight: 500;
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background: rgba(var(--warning-color-rgb), 0.1);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--warning-color);
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
     .modal-backdrop {

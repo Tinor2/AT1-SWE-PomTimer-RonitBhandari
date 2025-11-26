@@ -1,8 +1,35 @@
 import sqlite3
-import click
 import os
+from datetime import datetime
+import click
 from flask import current_app, g
 from flask.cli import with_appcontext
+
+# Custom timestamp adapters for SQLite
+def adapt_datetime_iso(val):
+    """Adapt datetime object to ISO format string."""
+    return val.isoformat()
+
+def convert_datetime(val):
+    """Convert ISO format string to datetime object."""
+    if isinstance(val, bytes):
+        val = val.decode('utf-8')
+    if isinstance(val, str):
+        try:
+            # Handle ISO format with timezone
+            if 'T' in val:
+                return datetime.fromisoformat(val.replace('Z', '+00:00'))
+            else:
+                # Handle other formats
+                return datetime.fromisoformat(val)
+        except (ValueError, AttributeError):
+            # Fallback to current time if parsing fails
+            return datetime.now()
+    return val
+
+# Register the adapters
+sqlite3.register_adapter(datetime, adapt_datetime_iso)
+sqlite3.register_converter("TIMESTAMP", convert_datetime)
 
 def get_db():
     """Get database connection."""
@@ -12,9 +39,13 @@ def get_db():
         
         g.db = sqlite3.connect(
             current_app.config['DATABASE'],
-            detect_types=sqlite3.PARSE_DECLTYPES
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
         )
         g.db.row_factory = sqlite3.Row
+        
+        # Fix timestamp handling for newer SQLite versions
+        g.db.execute("PRAGMA busy_timeout = 30000")
+        
         _ensure_schema(g.db)
 
     return g.db

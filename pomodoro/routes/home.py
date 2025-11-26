@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
+import time
+from datetime import datetime, timezone
 
 bp = Blueprint('home', __name__)
 
@@ -26,6 +28,282 @@ def index():
         task_hierarchy_html = render_task_hierarchy(tasks)
     
     return render_template('home/index.html', active_list=active_list, task_hierarchy_html=task_hierarchy_html)
+
+# Timer Endpoints
+
+@bp.route('/timer/status', methods=['GET'])
+@login_required
+def get_timer_status():
+    """Get current timer state for active list."""
+    db = get_db()
+    
+    # Get the active list for the current user
+    active_list = db.execute(
+        'SELECT * FROM lists WHERE is_active = 1 AND user_id = ?',
+        (current_user.id,)
+    ).fetchone()
+    
+    if not active_list:
+        return jsonify({'error': 'No active list'}), 404
+    
+    # Calculate remaining time
+    remaining = calculate_remaining_time(active_list)
+    
+    # Prepare response data
+    timer_data = {
+        'success': True,
+        'timer_state': active_list['timer_state'],
+        'current_phase': active_list['current_phase'],  # ADD THIS
+        'timer_remaining': remaining,
+        'sessions_completed': active_list['sessions_completed'],
+        'timer_started_at': active_list['timer_started_at'],
+        'timer_last_updated': active_list['timer_last_updated'],
+        'pomo_session': active_list['pomo_session'],
+        'pomo_short_break': active_list['pomo_short_break'],
+        'pomo_long_break': active_list['pomo_long_break']
+    }
+    
+    return jsonify(timer_data)
+
+@bp.route('/timer/start', methods=['POST'])
+@login_required
+def start_timer():
+    """Start or resume timer using stored phase context."""
+    db = get_db()
+    
+    # Get the active list for the current user
+    active_list = db.execute(
+        'SELECT * FROM lists WHERE is_active = 1 AND user_id = ?',
+        (current_user.id,)
+    ).fetchone()
+    
+    if not active_list:
+        return jsonify({'error': 'No active list'}), 404
+    
+    # Determine the appropriate state and phase
+    if active_list['timer_state'] == 'idle':
+        # Starting fresh - begin with session
+        state = 'session'
+        current_phase = 'session'
+        remaining = active_list['pomo_session'] * 60
+        sessions_completed = active_list['sessions_completed']
+    elif active_list['timer_state'] == 'paused':
+        # Resuming from pause - use stored current_phase
+        current_phase = active_list['current_phase'] or 'session'  # Fallback
+        state = current_phase  # Restore the actual phase
+        remaining = calculate_remaining_time(active_list)
+        sessions_completed = active_list['sessions_completed']
+    else:
+        # Already running - just return current state
+        state = active_list['timer_state']
+        current_phase = active_list['current_phase'] or state
+        remaining = calculate_remaining_time(active_list)
+        sessions_completed = active_list['sessions_completed']
+    
+    # Update timer state
+    updated_list = update_timer_state(
+        active_list['id'], 
+        state,
+        remaining=remaining,
+        sessions_completed=sessions_completed,
+        current_phase=current_phase
+    )
+    
+    if not updated_list:
+        return jsonify({'error': 'Failed to update timer'}), 500
+    
+    return jsonify({
+        'success': True,
+        'timer_state': updated_list['timer_state'],
+        'current_phase': updated_list['current_phase'],
+        'timer_remaining': updated_list['timer_remaining'],
+        'sessions_completed': updated_list['sessions_completed'],
+        'timer_started_at': updated_list['timer_started_at'],
+        'timer_last_updated': updated_list['timer_last_updated']
+    })
+
+@bp.route('/timer/pause', methods=['POST'])
+@login_required
+def pause_timer():
+    """Pause current timer while preserving phase context."""
+    db = get_db()
+    
+    # Get the active list for the current user
+    active_list = db.execute(
+        'SELECT * FROM lists WHERE is_active = 1 AND user_id = ?',
+        (current_user.id,)
+    ).fetchone()
+    
+    if not active_list:
+        return jsonify({'error': 'No active list'}), 404
+    
+    if active_list['timer_state'] not in ('session', 'short_break', 'long_break'):
+        return jsonify({'error': 'Timer is not running'}), 400
+    
+    # Calculate remaining time
+    remaining = calculate_remaining_time(active_list)
+    
+    # Preserve the current phase before pausing
+    current_phase = active_list['timer_state']  # session, short_break, or long_break
+    
+    # Update timer state with phase preservation
+    updated_list = update_timer_state(
+        active_list['id'], 
+        'paused', 
+        remaining=remaining,
+        current_phase=current_phase  # CRITICAL: Preserve phase context
+    )
+    
+    if not updated_list:
+        return jsonify({'error': 'Failed to pause timer'}), 500
+    
+    return jsonify({
+        'success': True,
+        'timer_state': updated_list['timer_state'],
+        'current_phase': updated_list['current_phase'],  # Include in response
+        'timer_remaining': updated_list['timer_remaining'],
+        'sessions_completed': updated_list['sessions_completed'],
+        'timer_started_at': updated_list['timer_started_at'],
+        'timer_last_updated': updated_list['timer_last_updated']
+    })
+
+@bp.route('/timer/reset', methods=['POST'])
+@login_required
+def reset_timer():
+    """Reset timer to beginning of current phase using stored phase context."""
+    db = get_db()
+    
+    # Get the active list for the current user
+    active_list = db.execute(
+        'SELECT * FROM lists WHERE is_active = 1 AND user_id = ?',
+        (current_user.id,)
+    ).fetchone()
+    
+    if not active_list:
+        return jsonify({'error': 'No active list'}), 404
+    
+    # Determine current phase and reset to beginning of that phase
+    current_phase = active_list['current_phase'] or 'session'  # Default fallback
+    
+    # Set remaining time based on current phase
+    if current_phase == 'session':
+        remaining = active_list['pomo_session'] * 60
+    elif current_phase == 'short_break':
+        remaining = active_list['pomo_short_break'] * 60
+    elif current_phase == 'long_break':
+        remaining = active_list['pomo_long_break'] * 60
+    else:
+        remaining = active_list['pomo_session'] * 60  # Ultimate fallback
+    
+    # Update timer state to paused with reset time
+    updated_list = update_timer_state(
+        active_list['id'], 
+        'paused',  # Reset to paused state
+        remaining=remaining,
+        current_phase=current_phase  # Preserve phase context
+    )
+    
+    if not updated_list:
+        return jsonify({'error': 'Failed to reset timer'}), 500
+    
+    return jsonify({
+        'success': True,
+        'timer_state': updated_list['timer_state'],
+        'current_phase': updated_list['current_phase'],
+        'timer_remaining': updated_list['timer_remaining'],
+        'sessions_completed': updated_list['sessions_completed'],
+        'timer_started_at': updated_list['timer_started_at'],
+        'timer_last_updated': updated_list['timer_last_updated']
+    })
+
+@bp.route('/timer/skip', methods=['POST'])
+@login_required
+def skip_timer():
+    """Skip to next phase."""
+    db = get_db()
+    
+    # Get the active list for the current user
+    active_list = db.execute(
+        'SELECT * FROM lists WHERE is_active = 1 AND user_id = ?',
+        (current_user.id,)
+    ).fetchone()
+    
+    if not active_list:
+        return jsonify({'error': 'No active list'}), 404
+    
+    # Determine next phase
+    next_state, sessions_completed = get_next_phase(
+        active_list['timer_state'], 
+        active_list['sessions_completed']
+    )
+    
+    # Set remaining time based on next phase
+    remaining = None  # Let update_timer_state calculate it
+    if next_state == 'session':
+        remaining = active_list['pomo_session'] * 60
+    elif next_state == 'short_break':
+        remaining = active_list['pomo_short_break'] * 60
+    elif next_state == 'long_break':
+        remaining = active_list['pomo_long_break'] * 60
+    
+    # Update timer state - set to the next phase (not paused)
+    updated_list = update_timer_state(
+        active_list['id'], 
+        next_state,  # Set to the actual next phase
+        remaining=remaining, 
+        sessions_completed=sessions_completed,
+        current_phase=next_state  # Update current_phase to match new state
+    )
+    
+    if not updated_list:
+        return jsonify({'error': 'Failed to skip timer'}), 500
+    
+    return jsonify({
+        'success': True,
+        'timer_state': updated_list['timer_state'],
+        'current_phase': updated_list['current_phase'],
+        'timer_remaining': updated_list['timer_remaining'],
+        'sessions_completed': updated_list['sessions_completed'],
+        'timer_started_at': updated_list['timer_started_at'],
+        'timer_last_updated': updated_list['timer_last_updated']
+    })
+
+@bp.route('/timer/reset-sets', methods=['POST'])
+@login_required
+def reset_sets():
+    """Reset the sessions_completed counter and go back to first focus session."""
+    db = get_db()
+    
+    # Get the active list for the current user
+    active_list = db.execute(
+        'SELECT * FROM lists WHERE is_active = 1 AND user_id = ?',
+        (current_user.id,)
+    ).fetchone()
+    
+    if not active_list:
+        return jsonify({'error': 'No active list'}), 404
+    
+    # Reset to first focus session (paused state)
+    updated_list = update_timer_state(
+        active_list['id'], 
+        'paused',  # Reset to paused state
+        remaining=active_list['pomo_session'] * 60,  # Full session time
+        sessions_completed=0,  # Reset sets to 0
+        current_phase='session'  # Set to first focus session
+    )
+    
+    if not updated_list:
+        return jsonify({'error': 'Failed to reset sets'}), 500
+    
+    return jsonify({
+        'success': True,
+        'timer_state': updated_list['timer_state'],
+        'current_phase': updated_list['current_phase'],
+        'timer_remaining': updated_list['timer_remaining'],
+        'sessions_completed': updated_list['sessions_completed'],
+        'timer_started_at': updated_list['timer_started_at'],
+        'timer_last_updated': updated_list['timer_last_updated']
+    })
 
 @bp.route('/task/add', methods=['POST'])
 @login_required
@@ -785,3 +1063,151 @@ def render_subtask(task):
     </li>'''
     
     return html
+
+# Timer Helper Functions
+
+def calculate_remaining_time(list_row):
+    """Calculate remaining time based on server time."""
+    if not list_row['timer_started_at'] or list_row['timer_state'] in ('idle', 'paused'):
+        return list_row['timer_remaining']
+    
+    # Calculate elapsed time since timer started
+    try:
+        # Handle different timestamp formats
+        timer_started_at = list_row['timer_started_at']
+        
+        # If it's bytes, decode to string
+        if isinstance(timer_started_at, bytes):
+            timer_started_at = timer_started_at.decode('utf-8')
+        
+        # If it's a string, parse it
+        if isinstance(timer_started_at, str):
+            started_at = datetime.fromisoformat(timer_started_at.replace('Z', '+00:00'))
+        # If it's already a datetime object, use it directly
+        elif isinstance(timer_started_at, datetime):
+            started_at = timer_started_at
+        else:
+            # Unknown type, fall back to stored remaining time
+            return list_row['timer_remaining']
+        
+        now = datetime.now(timezone.utc)
+        elapsed_seconds = int((now - started_at).total_seconds())
+        
+        # Calculate remaining time
+        remaining = list_row['timer_remaining'] - elapsed_seconds
+        return max(0, remaining)
+    except Exception as e:
+        # If timestamp parsing fails, return the stored remaining time
+        print(f"Timer calculation error: {e}")
+        return list_row['timer_remaining']
+
+def get_next_phase(current_state, sessions_completed):
+    """Determine next phase and session count."""
+    if current_state == 'session':
+        # After a work session, check if it's time for a long break
+        if (sessions_completed + 1) % 4 == 0:
+            return 'long_break', sessions_completed + 1
+        else:
+            return 'short_break', sessions_completed + 1
+    elif current_state == 'paused':
+        # When skipping from paused, we need to determine what phase we were in
+        # Use sessions_completed to determine the next phase in the cycle
+        if sessions_completed % 4 == 0:
+            # Should be in a session, so next is short break (increment sessions)
+            return 'short_break', sessions_completed + 1
+        elif sessions_completed % 4 == 1:
+            # Should be in short break, so next is session (don't increment sessions)
+            return 'session', sessions_completed
+        elif sessions_completed % 4 == 2:
+            # Should be in session, so next is short break (increment sessions)
+            return 'short_break', sessions_completed + 1
+        elif sessions_completed % 4 == 3:
+            # Should be in short break, so next is session (don't increment sessions)
+            return 'session', sessions_completed
+        else:
+            # Fallback to session
+            return 'session', sessions_completed
+    elif current_state in ('short_break', 'long_break'):
+        # After any break, return to work session
+        return 'session', sessions_completed
+    else:
+        # Default to session
+        return 'session', sessions_completed
+
+def update_timer_state(list_id, state, remaining=None, sessions_completed=None, current_phase=None):
+    """Update timer state in database with phase context preservation."""
+    db = get_db()
+    
+    # Get current list data
+    list_row = db.execute(
+        'SELECT * FROM lists WHERE id = ? AND user_id = ?',
+        (list_id, current_user.id)
+    ).fetchone()
+    
+    if not list_row:
+        return None
+    
+    # Prepare update data
+    update_data = {
+        'timer_state': state,
+        'timer_last_updated': datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Handle current_phase logic
+    if current_phase is not None:
+        update_data['current_phase'] = current_phase
+    elif state in ('session', 'short_break', 'long_break'):
+        # When starting/resuming, update current_phase to match state
+        update_data['current_phase'] = state
+    elif state in ('idle', 'paused'):
+        # When pausing/idling, preserve existing current_phase
+        if list_row['current_phase']:
+            update_data['current_phase'] = list_row['current_phase']
+    
+    # Set timer_started_at based on state
+    if state in ('session', 'short_break', 'long_break'):
+        if list_row['timer_state'] not in ('session', 'short_break', 'long_break'):
+            # Timer is starting/resuming
+            update_data['timer_started_at'] = datetime.now(timezone.utc).isoformat()
+            if remaining is None:
+                # Set remaining time based on current_phase
+                if update_data['current_phase'] == 'session':
+                    update_data['timer_remaining'] = list_row['pomo_session'] * 60
+                elif update_data['current_phase'] == 'short_break':
+                    update_data['timer_remaining'] = list_row['pomo_short_break'] * 60
+                elif update_data['current_phase'] == 'long_break':
+                    update_data['timer_remaining'] = list_row['pomo_long_break'] * 60
+    elif state in ('idle', 'paused'):
+        update_data['timer_started_at'] = None
+        if remaining is not None:
+            update_data['timer_remaining'] = remaining
+    
+    # Override remaining time if explicitly provided
+    if remaining is not None:
+        update_data['timer_remaining'] = remaining
+    
+    # Update sessions completed if provided
+    if sessions_completed is not None:
+        update_data['sessions_completed'] = sessions_completed
+    
+    # Build update query
+    set_clauses = []
+    values = []
+    for key, value in update_data.items():
+        set_clauses.append(f"{key} = ?")
+        values.append(value)
+    values.append(list_id)
+    values.append(current_user.id)
+    
+    # Execute update
+    db.execute(
+        f"UPDATE lists SET {', '.join(set_clauses)} WHERE id = ? AND user_id = ?",
+        values
+    )
+    db.commit()
+    
+    # Return updated list data
+    return db.execute(
+        'SELECT * FROM lists WHERE id = ? AND user_id = ?',
+        (list_id, current_user.id)
+    ).fetchone()
