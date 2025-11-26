@@ -154,6 +154,7 @@
     
     .modal-footer .btn {
         width: 100%;
+        min-width: auto;
     }
 }
 
@@ -195,4 +196,59 @@
     .modal-content {
         border: 2px solid var(--text-primary);
     }
+}
+
+/* Alert styles for modals */
+.alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid;
+    font-size: 0.9rem;
+}
+
+.alert-error {
+    background: rgba(var(--error-color-rgb), 0.1);
+    color: var(--error-color);
+    border-color: var(--error-color);
+}
+
+.alert-success {
+    background: rgba(var(--success-color-rgb), 0.1);
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+/* Form group styles for modals */
+.modal .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.modal .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.modal .form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modal .form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+}
+
+.modal .form-control::placeholder {
+    color: var(--text-muted);
 }

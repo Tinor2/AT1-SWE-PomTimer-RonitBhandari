@@ -685,6 +685,49 @@ def update_task_hierarchy():
         print(f"Database error in update_task_hierarchy: {e}")
         return jsonify({'error': f'Database error: {str(e)}'}), 500
 
+@bp.route('/task/<int:id>/update', methods=['PUT'])
+@login_required
+def update_task(id):
+    """Update task content via AJAX."""
+    if not request.is_json:
+        return jsonify({'error': 'Invalid request format'}), 400
+    
+    data = request.get_json()
+    content = data.get('content', '').strip()
+    
+    if not content:
+        return jsonify({'error': 'Task content cannot be empty'}), 400
+    
+    db = get_db()
+    
+    # Verify task ownership and get current data
+    task = db.execute(
+        'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
+        (id, current_user.id)
+    ).fetchone()
+    
+    if not task:
+        return jsonify({'error': 'Task not found or access denied'}), 404
+    
+    try:
+        # Update task content
+        db.execute(
+            'UPDATE tasks SET content = ? WHERE id = ? AND user_id = ?',
+            (content, id, current_user.id)
+        )
+        db.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Task updated successfully',
+            'content': content
+        })
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Database error in update_task: {e}")
+        return jsonify({'error': 'Failed to update task'}), 500
+
 @bp.route('/task/<int:parent_id>/subtask', methods=['POST'])
 @login_required
 def create_subtask(parent_id):
@@ -916,11 +959,12 @@ def render_parent_task(task, all_tasks):
     
     html = f'''<li class="{' '.join(css_classes)}" data-task-id="{task['id']}" draggable="true">
         <div class="task-header">
+            {"<button type='button' class='collapse-btn' aria-label='Toggle subtasks'>▼</button>" if subtasks else ""}
             <div class="drag-handle">⋮⋮</div>
             <form method="post" action="{url_for('home.toggle_task', id=task['id'])}" style="display: inline;">
                 <input type="checkbox" {"checked" if task['is_done'] else ""} onchange="this.form.submit()">
             </form>
-            <span class="task-content">{task['content']}</span>'''
+            <span class="task-content" data-task-id="{task['id']}">{task['content']}</span>'''
     
     # Add tags display using original structure
     if tags_list and any(color.strip() for color in tags_list):
@@ -943,10 +987,7 @@ def render_parent_task(task, all_tasks):
                     <div class="tag-menu-header">
                         <span class="tag-menu-title">Tags</span>
                         <button type="button" class="tag-settings-btn" aria-label="Tag settings" title="Manage tags">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="m12 1 0 6m0 6 0 6m11-7-6 0m-6 0-6 0"></path>
-                            </svg>
+                            <img src="{url_for('static', filename='assets/setting.png')}" alt="Settings" style="height: 16px; width: 16px;">
                         </button>
                     </div>
                     <div class="tag-menu-grid">
@@ -1010,7 +1051,7 @@ def render_subtask(task):
             <form method="post" action="{url_for('home.toggle_task', id=task['id'])}" style="display: inline;">
                 <input type="checkbox" {"checked" if task['is_done'] else ""} onchange="this.form.submit()">
             </form>
-            <span class="task-content">{task['content']}</span>'''
+            <span class="task-content" data-task-id="{task['id']}">{task['content']}</span>'''
     
     # Add tags display using original structure
     if tags_list and any(color.strip() for color in tags_list):
@@ -1033,10 +1074,7 @@ def render_subtask(task):
                     <div class="tag-menu-header">
                         <span class="tag-menu-title">Tags</span>
                         <button type="button" class="tag-settings-btn" aria-label="Tag settings" title="Manage tags">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="m12 1 0 6m0 6 0 6m11-7-6 0m-6 0-6 0"></path>
-                            </svg>
+                            <img src="{url_for('static', filename='assets/setting.png')}" alt="Settings" style="height: 16px; width: 16px;">
                         </button>
                     </div>
                     <div class="tag-menu-grid">

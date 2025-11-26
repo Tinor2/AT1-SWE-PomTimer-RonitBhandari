@@ -3,13 +3,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .. import db
 
 class User(UserMixin):
-    def __init__(self, id=None, username=None, email=None, password_hash=None, created_at=None, last_login=None):
+    def __init__(self, id=None, username=None, email=None, password_hash=None, created_at=None, last_login=None, profile_picture=None):
         self.id = id
         self.username = username
         self.email = email
         self.password_hash = password_hash
         self.created_at = created_at
         self.last_login = last_login
+        self.profile_picture = profile_picture
     
     @staticmethod
     def get_by_id(user_id):
@@ -69,6 +70,16 @@ class User(UserMixin):
         )
         database.commit()
     
+    def update_profile_picture(self, profile_picture_path):
+        """Update the user's profile picture."""
+        database = db.get_db()
+        database.execute(
+            'UPDATE users SET profile_picture = ? WHERE id = ?',
+            (profile_picture_path, self.id)
+        )
+        database.commit()
+        self.profile_picture = profile_picture_path
+    
     def to_dict(self):
         """Convert user object to dictionary."""
         return {
@@ -76,5 +87,6 @@ class User(UserMixin):
             'username': self.username,
             'email': self.email,
             'created_at': self.created_at,
-            'last_login': self.last_login
+            'last_login': self.last_login,
+            'profile_picture': self.profile_picture
         }

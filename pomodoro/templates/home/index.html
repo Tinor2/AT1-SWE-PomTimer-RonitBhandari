@@ -50,7 +50,19 @@
     
     <!-- Right Panel: To-Do List -->
     <div class="panel tasks-panel">
-        <h2>To-Do List</h2>
+        <div class="tasks-header">
+            <h2>To-Do List</h2>
+            <div class="sort-controls">
+                <label for="sortSelect" class="sort-label">Sort by:</label>
+                <select id="sortSelect" class="sort-select" aria-label="Sort tasks">
+                    <option value="default">Default Order</option>
+                    <option value="tag-color">Tag Color</option>
+                    <option value="alphabetical-az">Alphabetical (A-Z)</option>
+                    <option value="alphabetical-za">Alphabetical (Z-A)</option>
+                    <option value="tag-color-alpha">Tag Color + Alphabetical</option>
+                </select>
+            </div>
+        </div>
         {% if active_list %}
             <div class="tasks-container">
                 <div class="add-task-container">
@@ -161,5 +173,7 @@
 
 <!-- NEW: Unified Drag Controller - Single Source of Truth -->
 <script src="{{ url_for('static', filename='js/unified-drag-controller.js') }}"></script>
+<script src="{{ url_for('static', filename='js/collapsible-tasks.js') }}"></script>
 <script src="{{ url_for('static', filename='js/delete-modal.js') }}"></script>
+<script src="{{ url_for('static', filename='js/task-edit.js') }}"></script>
 {% endblock %}

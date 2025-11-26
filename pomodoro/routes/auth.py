@@ -1,6 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, abort, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
+from werkzeug.utils import secure_filename
+import os
+import uuid
 from ..models.user import User
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -94,3 +97,52 @@ def logout():
 @login_required
 def profile():
     return render_template('auth/profile.html', user=current_user)
+
+@bp.route('/upload_profile_picture', methods=['POST'])
+@login_required
+def upload_profile_picture():
+    if 'profile_picture' not in request.files:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'No file selected.'})
+        flash('No file selected.', 'error')
+        return redirect(url_for('auth.profile'))
+    
+    file = request.files['profile_picture']
+    if file.filename == '':
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'No file selected.'})
+        flash('No file selected.', 'error')
+        return redirect(url_for('auth.profile'))
+    
+    # Check file extension
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+    filename = secure_filename(file.filename)
+    if not filename or '.' not in filename or filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        error_msg = 'Invalid file type. Please upload PNG, JPG, JPEG, or GIF.'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': error_msg})
+        flash(error_msg, 'error')
+        return redirect(url_for('auth.profile'))
+    
+    # Generate unique filename
+    file_extension = filename.rsplit('.', 1)[1].lower()
+    unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+    
+    # Create upload directory if it doesn't exist
+    upload_dir = os.path.join(current_app.static_folder, 'uploads', 'profile_pictures')
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Save file
+    file_path = os.path.join(upload_dir, unique_filename)
+    file.save(file_path)
+    
+    # Update user profile picture in database
+    relative_path = os.path.join('uploads', 'profile_pictures', unique_filename).replace('\\', '/')
+    current_user.update_profile_picture(relative_path)
+    
+    success_msg = 'Profile picture updated successfully!'
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': True, 'message': success_msg, 'profile_picture': relative_path})
+    
+    flash(success_msg, 'success')
+    return redirect(url_for('auth.profile'))

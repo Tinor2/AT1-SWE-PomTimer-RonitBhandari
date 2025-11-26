@@ -83,6 +83,44 @@ def create():
     
     return render_template('lists/create.html')
 
+@bp.route('/<int:id>/edit', methods=('POST',))
+@login_required
+def edit_list(id):
+    db = get_db()
+    
+    # Verify the list belongs to the current user
+    list_to_edit = db.execute(
+        'SELECT id, name, description FROM lists WHERE id = ? AND user_id = ?',
+        (id, current_user.id)
+    ).fetchone()
+    
+    if not list_to_edit:
+        flash('List not found or access denied.', 'error')
+        return redirect(url_for('lists.index'))
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form.get('description', '')
+        error = None
+        
+        if not name:
+            error = 'List name is required.'
+            
+        if error is None:
+            try:
+                db.execute(
+                    'UPDATE lists SET name = ?, description = ? WHERE id = ? AND user_id = ?',
+                    (name, description, id, current_user.id)
+                )
+                db.commit()
+                flash('List updated successfully.')
+                return redirect(url_for('lists.index'))
+            except db.IntegrityError:
+                error = f"List '{name}' already exists."
+        
+        flash(error)
+        return redirect(url_for('lists.index'))
+
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
 def delete_list(id):

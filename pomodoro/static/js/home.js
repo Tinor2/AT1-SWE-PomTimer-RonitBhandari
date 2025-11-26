@@ -215,6 +215,15 @@ document.addEventListener('DOMContentLoaded', function() {
             openTagSettingsModal();
         }
     });
+
+    // Task sorting functionality
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            const sortType = e.target.value;
+            sortTasks(sortType);
+        });
+    }
 });
 
 // Tag Settings Modal Functions
@@ -438,4 +447,131 @@ function deleteTag(tagId) {
     // Show the delete modal
     deleteModal.classList.add('show');
     deleteModal.setAttribute('aria-hidden', 'false');
+}
+
+// Task Sorting Functions
+function sortTasks(sortType) {
+    const taskList = document.querySelector('.task-list');
+    if (!taskList) return;
+    
+    const tasks = Array.from(taskList.children);
+    let sortedTasks;
+    
+    switch(sortType) {
+        case 'tag-color':
+            sortedTasks = sortByTagColor(tasks);
+            break;
+        case 'alphabetical-az':
+            sortedTasks = sortAlphabetically(tasks, 'asc');
+            break;
+        case 'alphabetical-za':
+            sortedTasks = sortAlphabetically(tasks, 'desc');
+            break;
+        case 'tag-color-alpha':
+            sortedTasks = sortByTagColorThenAlpha(tasks);
+            break;
+        default:
+            return; // Keep current order
+    }
+    
+    reorderTasks(taskList, sortedTasks);
+}
+
+function sortByTagColor(tasks) {
+    return tasks.sort((a, b) => {
+        const colorA = getPrimaryTagColor(a);
+        const colorB = getPrimaryTagColor(b);
+        
+        // Tasks without tags go to the end
+        if (!colorA && !colorB) return 0;
+        if (!colorA) return 1;
+        if (!colorB) return -1;
+        
+        // Sort by hex color value
+        return colorA.localeCompare(colorB);
+    });
+}
+
+function sortAlphabetically(tasks, direction) {
+    return tasks.sort((a, b) => {
+        const textA = getTaskContent(a).toLowerCase();
+        const textB = getTaskContent(b).toLowerCase();
+        return direction === 'asc' ? 
+            textA.localeCompare(textB) : 
+            textB.localeCompare(textA);
+    });
+}
+
+function sortByTagColorThenAlpha(tasks) {
+    return tasks.sort((a, b) => {
+        const colorA = getPrimaryTagColor(a);
+        const colorB = getPrimaryTagColor(b);
+        
+        // First sort by tag color
+        if (colorA && colorB) {
+            const colorComparison = colorA.localeCompare(colorB);
+            if (colorComparison !== 0) return colorComparison;
+        }
+        
+        // If colors are the same or one has no color, sort alphabetically
+        const textA = getTaskContent(a).toLowerCase();
+        const textB = getTaskContent(b).toLowerCase();
+        return textA.localeCompare(textB);
+    });
+}
+
+function getPrimaryTagColor(taskElement) {
+    // Get the first tag color from the task
+    const tagDot = taskElement.querySelector('.tag-dot');
+    if (!tagDot) return null;
+    
+    // Extract color from title attribute or computed style
+    const color = tagDot.title || tagDot.style.backgroundColor;
+    
+    // Convert to hex format if needed
+    if (color.startsWith('#')) return color.toLowerCase();
+    
+    // Handle rgb() format
+    if (color.startsWith('rgb')) {
+        const rgb = color.match(/\d+/g);
+        if (rgb && rgb.length >= 3) {
+            const hex = '#' + rgb.slice(0, 3).map(x => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+            return hex.toLowerCase();
+        }
+    }
+    
+    return color.toLowerCase();
+}
+
+function getTaskContent(taskElement) {
+    // Get the task text content
+    const contentElement = taskElement.querySelector('.task-content');
+    return contentElement ? contentElement.textContent.trim() : '';
+}
+
+function reorderTasks(taskList, sortedTasks) {
+    // Clear current tasks
+    taskList.innerHTML = '';
+    
+    // Add sorted tasks back to the list
+    sortedTasks.forEach(task => {
+        taskList.appendChild(task);
+    });
+    
+    // Update task positions in database if needed
+    updateTaskPositions(sortedTasks);
+}
+
+function updateTaskPositions(sortedTasks) {
+    // Optional: Update task positions in database
+    // This would require an AJAX call to maintain sort order
+    // For now, we'll just log it
+    console.log('Task order updated:', sortedTasks.map((task, index) => ({
+        position: index,
+        content: getTaskContent(task),
+        tags: Array.from(task.querySelectorAll('.tag-dot')).map(dot => dot.title)
+    })));
 }

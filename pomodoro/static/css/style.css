@@ -222,6 +222,52 @@ body {
     background-clip: text;
 }
 
+.tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sort-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.sort-select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+}
+
+.sort-select:hover {
+    border-color: var(--primary-color);
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
 /* Pomodoro Panel */
 .pomodoro-placeholder {
     text-align: center;
@@ -430,6 +476,16 @@ body {
     .panel h2 {
         font-size: 1.25rem;
         margin-bottom: 0.75rem;
+    }
+    
+    .tasks-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .sort-controls {
+        width: 100%;
+        justify-content: flex-end;
     }
     
     .add-task-container {
@@ -892,6 +948,20 @@ body {
     margin-bottom: 2rem;
 }
 
+.lists-panel {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    box-shadow: var(--shadow-lg);
+    overflow-y: auto;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lists-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+}
+
 .lists-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -899,17 +969,17 @@ body {
 }
 
 .list-card {
-    background: var(--bg-primary);
-    border-radius: var(--radius-xl);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
     padding: 1.5rem;
-    box-shadow: var(--shadow-md);
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .list-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .list-card.active {
@@ -964,7 +1034,6 @@ body {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     color: white;
     font-weight: 600;
-    max-width: fit-content;
 }
 
 .btn-primary:hover {
@@ -1082,6 +1151,10 @@ body {
     .panel {
         padding: 1.5rem;
     }
+    
+    .lists-panel {
+        padding: 1.5rem;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1095,6 +1168,11 @@ body {
     .panel {
         padding: 1.25rem;
         min-height: auto;
+    }
+    
+    .lists-panel {
+        padding: 1rem;
+        border-radius: var(--radius-lg);
     }
     
     .lists-grid {
@@ -1437,4 +1515,466 @@ body {
 .timer-container.completed .timer-display {
     animation: pulse 1s ease-in-out 3;
     color: var(--success-color);
+}
+
+/* Task Editing Styles - Phase 2 */
+.task-content {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: var(--radius-sm);
+    padding: 0.25rem 0.5rem;
+    margin: -0.25rem -0.5rem;
+    position: relative;
+}
+
+.task-content:hover {
+    background-color: var(--bg-tertiary);
+    box-shadow: var(--shadow-sm);
+}
+
+.task-content.editing {
+    background-color: var(--bg-primary);
+    box-shadow: 0 0 0 2px var(--primary-color);
+    outline: none;
+}
+
+.task-edit-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 2px solid var(--primary-color);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.task-edit-input:focus {
+    border-color: var(--primary-hover);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.task-edit-input::selection {
+    background-color: var(--primary-light);
+    color: white;
+}
+
+.task-item.task-editing {
+    background-color: rgba(99, 102, 241, 0.05);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.task-item.task-saving {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.task-item.task-saving .task-edit-input {
+    background: repeating-linear-gradient(
+        45deg,
+        var(--bg-secondary),
+        var(--bg-secondary) 10px,
+        var(--bg-tertiary) 10px,
+        var(--bg-tertiary) 20px
+    );
+}
+
+/* Toast Notifications */
+.task-edit-toast {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: 0.875rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    max-width: 300px;
+}
+
+.task-edit-toast--show {
+    transform: translateX(0);
+}
+
+.task-edit-toast--success {
+    background-color: var(--success-color);
+    color: white;
+    border-left: 4px solid #059669;
+}
+
+.task-edit-toast--error {
+    background-color: var(--error-color);
+    color: white;
+    border-left: 4px solid #dc2626;
+}
+
+.task-edit-toast--info {
+    background-color: var(--primary-color);
+    color: white;
+    border-left: 4px solid #4f46e5;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .task-edit-input {
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: 1rem 1.25rem;
+        margin: 0.5rem 0;
+        width: calc(100% + 1rem); /* Expand beyond container */
+        margin-left: -0.5rem; /* Offset the expansion */
+        margin-right: -0.5rem;
+        box-sizing: border-box;
+        min-height: 48px; /* Minimum touch target */
+        line-height: 1.4;
+    }
+    
+    .task-content {
+        padding: 0.75rem 1rem;
+        margin: -0.75rem -1rem;
+        min-height: 48px; /* Minimum touch target */
+        display: flex;
+        align-items: center;
+    }
+    
+    .task-content.editing {
+        padding: 0.5rem 0; /* Remove padding when editing */
+        margin: 0;
+        width: 100%;
+    }
+    
+    .task-item.task-editing {
+        background-color: rgba(99, 102, 241, 0.08);
+        padding: 0.75rem 0;
+        margin: 0.5rem 0;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+    }
+    
+    .task-item.task-editing .task-header {
+        padding: 0 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .task-item.task-editing .drag-handle,
+    .task-item.task-editing form,
+    .task-item.task-editing .task-tags-display {
+        flex-shrink: 0;
+    }
+    
+    .task-item.task-editing .task-content {
+        flex: 1;
+        min-width: 0; /* Allow content to shrink */
+    }
+    
+    .task-edit-toast {
+        top: 1rem;
+        right: 1rem;
+        left: 1rem;
+        max-width: none;
+        transform: translateY(-100%);
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+    }
+    
+    .task-edit-toast--show {
+        transform: translateY(0);
+    }
+    
+    /* Mobile input field enhancement */
+    .task-edit-input:focus {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.3);
+    }
+    
+    /* Better spacing for mobile editing */
+    .task-item.task-editing + .task-item {
+        margin-top: 1rem;
+    }
+    
+    /* Ensure scrolling works properly */
+    .task-list .task-item.task-editing {
+        z-index: 10;
+        position: relative;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    .task-content {
+        min-height: 44px; /* iOS touch target minimum */
+        display: flex;
+        align-items: center;
+    }
+    
+    .task-content:hover {
+        background-color: transparent; /* Remove hover on touch devices */
+    }
+    
+    .task-content:active {
+        background-color: var(--bg-tertiary);
+    }
+}
+
+/* Phase 3: Advanced Mobile Animations */
+.task-content {
+    position: relative;
+    overflow: hidden;
+}
+
+.task-content::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+    pointer-events: none;
+}
+
+.task-content.long-press-active::before {
+    width: 100%;
+    height: 100%;
+}
+
+/* Long press visual feedback */
+.task-item.long-press-active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+/* Mobile-specific editing animations */
+@media (hover: none) and (pointer: coarse) {
+    .task-edit-input {
+        animation: slideUpMobile 0.3s ease;
+    }
+    
+    @keyframes slideUpMobile {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+/* Enhanced toast animations for mobile */
+@media (max-width: 768px) {
+    .task-edit-toast {
+        animation: slideDownMobile 0.4s ease;
+    }
+    
+    .task-edit-toast--show {
+        animation: slideDownMobile 0.4s ease forwards;
+    }
+    
+    @keyframes slideDownMobile {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+/* Haptic feedback visual indicators */
+.task-content.haptic-light {
+    animation: hapticPulse 0.1s ease;
+}
+
+.task-content.haptic-medium {
+    animation: hapticPulse 0.15s ease;
+}
+
+.task-content.haptic-heavy {
+    animation: hapticPulse 0.2s ease;
+}
+
+@keyframes hapticPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Gesture indicators */
+.task-content.gesture-hint {
+    position: relative;
+}
+
+.task-content.gesture-hint::after {
+    content: 'Long press to edit';
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+.task-content.gesture-hint.show-hint::after {
+    opacity: 1;
+}
+
+/* Keyboard awareness improvements */
+.task-item.keyboard-visible {
+    transition: transform 0.3s ease;
+}
+
+.task-item.keyboard-visible.task-editing {
+    transform: translateY(-10px);
+}
+
+/* Visual viewport API support */
+.visual-viewport-adjusted {
+    transition: all 0.2s ease;
+}
+
+/* Enhanced mobile focus management */
+@media (hover: none) and (pointer: coarse) {
+    .task-edit-input:focus {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.3);
+    }
+}
+
+/* Loading states with mobile optimization */
+.task-item.task-saving {
+    position: relative;
+}
+
+.task-item.task-saving::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: var(--radius-md);
+    z-index: 1;
+}
+
+/* Mobile-specific success/error states */
+@media (max-width: 768px) {
+    .task-item.task-success {
+        animation: successPulseMobile 0.6s ease;
+    }
+    
+    .task-item.task-error {
+        animation: errorShakeMobile 0.5s ease;
+    }
+    
+    @keyframes successPulseMobile {
+        0%, 100% {
+            transform: scale(1);
+            background-color: transparent;
+        }
+        50% {
+            transform: scale(1.02);
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+    }
+    
+    @keyframes errorShakeMobile {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        25% {
+            transform: translateX(-5px);
+        }
+        75% {
+            transform: translateX(5px);
+        }
+    }
+}
+
+/* Touch gesture conflict resolution */
+.task-content.no-tap {
+    pointer-events: none;
+}
+
+.task-content.no-tap .task-edit-input {
+    pointer-events: auto;
+}
+
+/* Enhanced accessibility for mobile */
+@media (max-width: 768px) and (prefers-reduced-motion: no-preference) {
+    .task-content {
+        transition: all 0.2s ease;
+    }
+    
+    .task-edit-input {
+        transition: all 0.3s ease;
+    }
+}
+
+/* Dark mode support for mobile */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+    .task-edit-toast {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+    
+    .task-content.gesture-hint::after {
+        background: var(--text-primary);
+        color: var(--bg-primary);
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .task-edit-input {
+        border-width: 3px;
+        border-color: ButtonText;
+    }
+    
+    .task-content.editing {
+        outline: 2px solid ButtonText;
+        outline-offset: 2px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .task-content,
+    .task-edit-input,
+    .task-item.task-editing,
+    .task-edit-toast {
+        transition: none;
+    }
+    
+    .task-item.task-saving .task-edit-input {
+        background: var(--bg-secondary);
+    }
 }
