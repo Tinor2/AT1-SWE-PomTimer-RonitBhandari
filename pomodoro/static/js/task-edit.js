@@ -213,30 +213,9 @@ class TaskEditor {
     }
     
     handleTap(taskId, taskContent, eventType) {
-        const now = Date.now();
-        const lastTap = this.taps.get(taskId) || 0;
-        
-        // Clear existing timeout for this task
-        if (this.tapTimeout.has(taskId)) {
-            clearTimeout(this.tapTimeout.get(taskId));
-            this.tapTimeout.delete(taskId);
-        }
-        
-        // Check if this is a double tap
-        if (now - lastTap < this.tapThreshold) {
-            // Double tap detected - start editing
-            this.triggerHaptic('doubleTap');
-            this.startEditing(taskId, taskContent, 'doubleTap');
-            this.taps.delete(taskId); // Reset tap counter
-        } else {
-            // First tap - set timeout to clear if second tap doesn't come
-            const timeout = setTimeout(() => {
-                this.taps.delete(taskId);
-            }, this.tapThreshold);
-            this.tapTimeout.set(taskId, timeout);
-        }
-        
-        this.taps.set(taskId, now);
+        // Single tap - immediately start editing
+        this.triggerHaptic('light');
+        this.startEditing(taskId, taskContent, 'singleTap');
     }
     
     getTaskIdFromElement(element) {
@@ -244,7 +223,7 @@ class TaskEditor {
         return taskItem ? taskItem.dataset.taskId : null;
     }
     
-    startEditing(taskId, taskContent, trigger = 'doubleTap') {
+    startEditing(taskId, taskContent, trigger = 'singleTap') {
         if (this.isEditing) return;
         
         this.isEditing = true;
