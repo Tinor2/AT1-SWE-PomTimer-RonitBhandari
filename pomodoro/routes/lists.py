@@ -18,6 +18,27 @@ def index():
     ).fetchall()
     return render_template('lists/index.html', lists=lists)
 
+@bp.route('/<int:id>', methods=('GET',))
+@login_required
+def detail(id):
+    db = get_db()
+
+    list_row = db.execute(
+        'SELECT * FROM lists WHERE id = ? AND user_id = ?',
+        (id, current_user.id)
+    ).fetchone()
+
+    if list_row is None:
+        flash('List not found or access denied.', 'error')
+        return redirect(url_for('lists.index'))
+
+    tasks = db.execute(
+        'SELECT * FROM tasks WHERE list_id = ? AND user_id = ? ORDER BY position, created_at',
+        (id, current_user.id)
+    ).fetchall()
+
+    return render_template('lists/detail.html', list=list_row, tasks=tasks)
+
 @bp.route('/<int:id>/select', methods=('POST',))
 @login_required
 def select_list(id):

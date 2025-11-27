@@ -26,6 +26,7 @@
                                 {% if list['is_active'] %}Active{% else %}Select{% endif %}
                             </button>
                         </form>
+                        <a href="{{ url_for('lists.detail', id=list['id']) }}" class="btn btn-secondary">View Details</a>
                         <button type="button" class="btn btn-delete delete-list-btn" data-list-id="{{ list['id'] }}" data-list-name="{{ list['name'] }}">Delete</button>
                         <button type="button" class="btn btn-edit edit-list-btn" data-list-id="{{ list['id'] }}" data-list-name="{{ list['name'] }}" data-list-description="{{ list['description'] or '' }}">
                             <img src="{{ url_for('static', filename='assets/setting.png') }}" alt="Edit settings" style="height: 16px; width: 16px; vertical-align: middle;"/>

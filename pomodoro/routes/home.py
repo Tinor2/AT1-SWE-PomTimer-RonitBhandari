@@ -305,6 +305,21 @@ def reset_sets():
         'timer_last_updated': updated_list['timer_last_updated']
     })
 
+@bp.route('/task/<int:id>', methods=['GET'])
+@login_required
+def task_detail(id):
+    db = get_db()
+    task = db.execute(
+        'SELECT t.*, l.name AS list_name FROM tasks t JOIN lists l ON t.list_id = l.id WHERE t.id = ? AND t.user_id = ?',
+        (id, current_user.id)
+    ).fetchone()
+
+    if task is None:
+        flash('Task not found or access denied.', 'error')
+        return redirect(url_for('home.index'))
+
+    return render_template('home/task_detail.html', task=task)
+
 @bp.route('/task/add', methods=['POST'])
 @login_required
 def add_task():
