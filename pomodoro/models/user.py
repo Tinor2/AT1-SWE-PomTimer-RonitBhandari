@@ -47,7 +47,7 @@ class User(UserMixin):
     
     @staticmethod
     def create(username, email, password):
-        """Create a new user."""
+        """Create a new user with default data."""
         password_hash = generate_password_hash(password)
         database = db.get_db()
         cursor = database.execute(
@@ -55,7 +55,18 @@ class User(UserMixin):
             (username, email, password_hash)
         )
         database.commit()
-        return User.get_by_id(cursor.lastrowid)
+        
+        # Get the new user ID
+        user_id = cursor.lastrowid
+        
+        # Seed default data for the new user
+        try:
+            from .. import db as db_module
+            db_module.seed_default_data(user_id)
+        except Exception as e:
+            print(f"Warning: Failed to seed default data for user {user_id}: {e}")
+        
+        return User.get_by_id(user_id)
     
     def check_password(self, password):
         """Check if the provided password matches the stored hash."""

@@ -114,11 +114,39 @@ def init_db_command():
     init_db()
     click.echo('Initialized the database.')
 
+@click.command('seed-data')
+@with_appcontext
+def seed_data_command():
+    """Seed default data for users who don't have any lists."""
+    database = get_db()
+    
+    # Get users who don't have any lists
+    users_without_lists = database.execute("""
+        SELECT u.id, u.username 
+        FROM users u 
+        LEFT JOIN lists l ON u.id = l.user_id 
+        WHERE l.id IS NULL
+    """).fetchall()
+    
+    if not users_without_lists:
+        click.echo('All users already have data. No seeding needed.')
+        return
+    
+    for user in users_without_lists:
+        try:
+            seed_default_data(user['id'])
+            click.echo(f'Seeded default data for user: {user["username"]}')
+        except Exception as e:
+            click.echo(f'Failed to seed data for user {user["username"]}: {e}')
+    
+    click.echo(f'Seeded data for {len(users_without_lists)} users.')
+
 def init_app(app):
     """Register database functions with the Flask app."""
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
     app.cli.add_command(migrate_user_data_command)
+    app.cli.add_command(seed_data_command)
 
 def _ensure_schema(db: sqlite3.Connection):
     try:
@@ -173,3 +201,79 @@ def _ensure_schema(db: sqlite3.Connection):
             db.commit()
     except sqlite3.Error:
         pass
+
+def seed_default_data(user_id):
+    """Seed default list and tasks for a new user."""
+    database = get_db()
+    
+    try:
+        # Create default list
+        cursor = database.execute(
+            'INSERT INTO lists (user_id, name, description, is_active) VALUES (?, ?, ?, ?)',
+            (user_id, 'My first list', 'A default list to get you started with your Pomodoro timer!', 1)
+        )
+        list_id = cursor.lastrowid
+        
+        # Default tasks with hierarchical structure
+        default_tasks = [
+            # Main tasks (level 0)
+            ('Welcome to Pomodoro Timer!', 'Start your first 25-minute work session', 0, None, 0),
+            ('Set up your workspace', 'Organize your desk and minimize distractions', 1, None, 0),
+            ('Plan your day', 'Review your tasks and priorities for today', 2, None, 0),
+            ('Take a break', 'Remember to rest between work sessions', 3, None, 0),
+            ('Review progress', 'Check what you accomplished today', 4, None, 0),
+            
+            # Subtasks for "Set up your workspace" (level 1)
+            ('Clear desk surface', 'Remove unnecessary items from your workspace', 0, 2, 1),
+            ('Check lighting', 'Ensure good lighting for reduced eye strain', 1, 2, 1),
+            ('Prepare water/snacks', 'Have refreshments ready to avoid interruptions', 2, 2, 1),
+            
+            # Subtasks for "Plan your day" (level 1)
+            ('List top 3 priorities', 'Identify your most important tasks today', 0, 3, 1),
+            ('Estimate time needed', 'Allocate time for each major task', 1, 3, 1),
+            ('Schedule breaks', 'Plan your pomodoro sessions and breaks', 2, 3, 1),
+            
+            # Subtask for "Take a break" (level 1)
+            ('Stretch and move', 'Do some quick stretches to refresh your body', 0, 4, 1),
+            
+            # Subtasks for "Review progress" (level 1)
+            ('Check completed tasks', 'Review what you finished today', 0, 5, 1),
+            ('Note challenges', 'Document any obstacles you faced', 1, 5, 1),
+            ('Plan tomorrow', 'Quick outline for next day\'s priorities', 2, 5, 1),
+        ]
+        
+        # Insert tasks with hierarchical structure
+        for i, (content, description, position, parent_id, level) in enumerate(default_tasks):
+            cursor = database.execute(
+                'INSERT INTO tasks (list_id, user_id, content, position, parent_id, level, path) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                (list_id, user_id, content, position, parent_id, level, str(i + 1) if parent_id is None else f"{parent_id}.{i + 1}")
+            )
+            
+            # Update path for root-level tasks
+            if parent_id is None:
+                task_id = cursor.lastrowid
+                database.execute('UPDATE tasks SET path = ? WHERE id = ?', (str(task_id), task_id))
+        
+        # Create default user tags
+        default_tags = [
+            ('#FF6B6B', 'Red', 0),    # Urgent/Important
+            ('#4ECDC4', 'Teal', 1),   # Work
+            ('#45B7D1', 'Blue', 2),   # Personal
+            ('#96CEB4', 'Green', 3),  # Health
+            ('#FFEAA7', 'Yellow', 4), # Ideas
+            ('#DDA0DD', 'Purple', 5), # Learning
+        ]
+        
+        for color_hex, color_name, position in default_tags:
+            database.execute(
+                'INSERT INTO user_tags (user_id, color_hex, color_name, position) VALUES (?, ?, ?, ?)',
+                (user_id, color_hex, color_name, position)
+            )
+        
+        database.commit()
+        print(f"Seeded default data for user {user_id}: 1 list, {len(default_tasks)} tasks, {len(default_tags)} tags")
+        
+    except sqlite3.Error as e:
+        print(f"Error seeding data for user {user_id}: {e}")
+        database.rollback()
+        raise
